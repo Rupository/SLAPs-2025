@@ -9,14 +9,21 @@ method ReverseNumber(n: int) returns (rev: int)
     var num := n;
     
     while num > 0
-        // TODO: Write loop invariant(s)
+        invariant rev >= 0
+        invariant num >= 0
 
-        
+        invariant (num == 0 ==> rev == ReverseDigits(n))
+        // my invariant's evil cousin that i hate
+
+        invariant (num > 0  ==> rev * Power(10, NumDigits(num)) + ReverseDigits(num) == ReverseDigits(n))
+        // i love my weird invariant #my invariant
+
         decreases num
     {
         var digit := num % 10;
         rev := rev * 10 + digit;
         num := num / 10;
+
     }
 }
 
@@ -30,6 +37,7 @@ function ReverseDigits(n: int): int
 // Helper function to count digits
 function NumDigits(n: int): int
     requires n >= 0
+    ensures NumDigits(n) >= 1
 {
     if n < 10 then 1 else 1 + NumDigits(n / 10)
 }
