@@ -1,6 +1,7 @@
 // lucas numbers: 2, 1, 3, 4, 7, 11, 18, ...
 // inspired by ICS and DM
 
+
 method Lucas(n: int) returns (x : int)
     requires n >= 1
     ensures x == lucas(n)
@@ -34,5 +35,3 @@ function lucas(n: int): int
 
     else lucas(n-2) + lucas(n-1)
 }
-
-// 
