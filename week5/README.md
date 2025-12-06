@@ -27,5 +27,5 @@
 
 - Run the following command:
     ```bash
-    python parser.py <yourfile>.dfy
+    python parser.py <your_file>.dfy
     ```

@@ -1,5 +1,5 @@
 // test cases from source repo
-method Sum(n: int) returns (result: int)
+method Sum(n: int) returns (result: int, test:int)
   requires n >= 0
   ensures result == n * (n + 1) / 2
 {
@@ -7,14 +7,15 @@ method Sum(n: int) returns (result: int)
   var sum := 0;
   
   while (i <= n)
-    //invariant 0 <= i <= n + 1
-    //invariant sum == i * (i - 1) / 2
+    invariant 0 <= i <= n + 1
+    invariant sum == i * (i - 1) / 2
   {
     sum := sum + i;
     i := i + 1;
   }
   
   result := sum;
+  test := sum;
 }
 
 
