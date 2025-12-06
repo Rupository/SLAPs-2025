@@ -96,7 +96,7 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         self.visitChildren(ctx)
 
-    def visitUpdate(self, ctx: dafnyParser.AssignmentContext):
+    def visitMethodAssignments(self, ctx: dafnyParser.AssignmentContext):
         # same idea as decleration - some declared variables may get updated before the loop starts.
         # we want to keep track of their states exactly as they were before the loop began
         
@@ -133,9 +133,21 @@ class DafnyJSONVisitor(dafnyVisitor):
         }
         self.current_method["loops"].append(loop_obj)
 
+        # save the states before going deeper into loop body
+        previous_state = self.state.copy()
+
         # important: visit children so assignments INSIDE loop 
         # update the state for any code that follows.
         self.visitChildren(ctx)
+
+        # restore - because you don't know the termination values
+        self.state = previous_state
+
+        # and mark any updated variables as such
+        for var in variables:
+            name = var["name"]
+            if name in self.state:
+                self.state[name] = "unknown-post-loop"
 
     def visitForLoop(self, ctx: dafnyParser.ForLoopContext):
         # largely same idea as while loops
@@ -150,7 +162,9 @@ class DafnyJSONVisitor(dafnyVisitor):
         loop_var = ctx.identifier().getText()
         start_expr = ctx.expression(0).getText()
         end_expr = ctx.expression(1).getText()
-        
+
+        previous_state = self.state.copy()
+
         # for loop doesnt initialise "i" (loop increment) beforehand, 
         # needs to get added so we can interpret properly!
         # We add it to the backpack immediately so nested logic can see it.
@@ -178,9 +192,18 @@ class DafnyJSONVisitor(dafnyVisitor):
         
         self.visitChildren(ctx)
 
+        self.state = previous_state
+
+        for var in variables:
+            name = var["name"]
+            if name != loop_var and name in self.state: 
+                # skip iterator as it was restored properly 
+                # (iterator in for loop is dropped)
+                self.state[name] = "unknown-post-loop"
+
     def analyze_loop_variables(self, body_sequence):
         # find variable transitions in the loop body
-        updates = self.scan_assignments(body_sequence)
+        updates = self.scan_loop_assignments(body_sequence)
         results = []
 
         for var_name, assignment_expr in updates.items():
@@ -194,7 +217,7 @@ class DafnyJSONVisitor(dafnyVisitor):
             })
         return results
 
-    def scan_assignments(self, sequence_ctx):
+    def scan_loop_assignments(self, sequence_ctx):
         # finds variables updates/assignments, same logic as visitDeclaration
 
         updates = {}
@@ -215,20 +238,40 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         return updates
 
-def main(argv):
-    input_stream = FileStream(argv[1], encoding='utf-8')
+def parse_file(file_path):
+    input_stream = FileStream(file_path, encoding='utf-8')
     lexer = dafnyLexer(input_stream)
     stream = CommonTokenStream(lexer)
     parser = dafnyParser(stream)
     tree = parser.program()
-
     visitor = DafnyJSONVisitor()
-    methods_data = visitor.visit(tree) # start visiting from the root of the tree
+    return visitor.visit(tree)
 
-    print(json.dumps(methods_data, indent=2))
+def parse_batch(file_paths):
+    results = {}
+    for path in file_paths:
+        try:
+            results[path] = parse_file(path)
+        except Exception as e:
+            print(f"Error parsing {path}: {e}", file=sys.stderr)
+            results[path] = None
+            
+    return results
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python parser.py <your_file_1> [<your_file_2>.dfy]")
+        return
+
+    files_to_process = sys.argv[1:]
+
+    all_data = parse_batch(files_to_process)
+
+    if len(files_to_process) == 1:
+        single_key = files_to_process[0]
+        print(json.dumps(all_data[single_key], indent=2))
+    else:
+        print(json.dumps(all_data, indent=2))
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        main(sys.argv)
-    else:
-        print("Usage: parser.py <your_file>.dfy")
+    main()
