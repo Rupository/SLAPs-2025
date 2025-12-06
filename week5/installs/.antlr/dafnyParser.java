@@ -170,14 +170,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_boolLiteral; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterBoolLiteral(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitBoolLiteral(this);
-		}
 	}
 
 	public final BoolLiteralContext boolLiteral() throws RecognitionException {
@@ -208,14 +200,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_intLiteral; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterIntLiteral(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitIntLiteral(this);
-		}
 	}
 
 	public final IntLiteralContext intLiteral() throws RecognitionException {
@@ -246,14 +230,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_realLiteral; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterRealLiteral(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitRealLiteral(this);
-		}
 	}
 
 	public final RealLiteralContext realLiteral() throws RecognitionException {
@@ -284,14 +260,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_charLiteral; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterCharLiteral(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitCharLiteral(this);
-		}
 	}
 
 	public final CharLiteralContext charLiteral() throws RecognitionException {
@@ -322,14 +290,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_stringToken; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterStringToken(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitStringToken(this);
-		}
 	}
 
 	public final StringTokenContext stringToken() throws RecognitionException {
@@ -361,14 +321,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_unaryOperator; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterUnaryOperator(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitUnaryOperator(this);
-		}
 	}
 
 	public final UnaryOperatorContext unaryOperator() throws RecognitionException {
@@ -408,14 +360,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_upperIdentifier; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterUpperIdentifier(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitUpperIdentifier(this);
-		}
 	}
 
 	public final UpperIdentifierContext upperIdentifier() throws RecognitionException {
@@ -446,14 +390,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_identifier; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterIdentifier(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitIdentifier(this);
-		}
 	}
 
 	public final IdentifierContext identifier() throws RecognitionException {
@@ -495,14 +431,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_topDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterTopDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitTopDecl(this);
-		}
 	}
 
 	public final TopDeclContext topDecl() throws RecognitionException {
@@ -570,14 +498,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_genericInstantiation; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterGenericInstantiation(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitGenericInstantiation(this);
-		}
 	}
 
 	public final GenericInstantiationContext genericInstantiation() throws RecognitionException {
@@ -651,14 +571,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_type; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitType(this);
-		}
 	}
 
 	public final TypeContext type() throws RecognitionException {
@@ -770,14 +682,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arrayType; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterArrayType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitArrayType(this);
-		}
 	}
 
 	public final ArrayTypeContext arrayType() throws RecognitionException {
@@ -813,14 +717,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_mapType; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMapType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMapType(this);
-		}
 	}
 
 	public final MapTypeContext mapType() throws RecognitionException {
@@ -856,14 +752,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_setType; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterSetType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitSetType(this);
-		}
 	}
 
 	public final SetTypeContext setType() throws RecognitionException {
@@ -899,14 +787,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_multisetType; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMultisetType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMultisetType(this);
-		}
 	}
 
 	public final MultisetTypeContext multisetType() throws RecognitionException {
@@ -942,14 +822,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_sequenceType; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterSequenceType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitSequenceType(this);
-		}
 	}
 
 	public final SequenceTypeContext sequenceType() throws RecognitionException {
@@ -991,14 +863,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_datatypeDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDatatypeDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDatatypeDecl(this);
-		}
 	}
 
 	public final DatatypeDeclContext datatypeDecl() throws RecognitionException {
@@ -1057,14 +921,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_datatypeConstructor; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDatatypeConstructor(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDatatypeConstructor(this);
-		}
 	}
 
 	public final DatatypeConstructorContext datatypeConstructor() throws RecognitionException {
@@ -1119,14 +975,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_classDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterClassDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitClassDecl(this);
-		}
 	}
 
 	public final ClassDeclContext classDecl() throws RecognitionException {
@@ -1217,14 +1065,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_classMemberDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterClassMemberDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitClassMemberDecl(this);
-		}
 	}
 
 	public final ClassMemberDeclContext classMemberDecl() throws RecognitionException {
@@ -1298,14 +1138,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_traitDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterTraitDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitTraitDecl(this);
-		}
 	}
 
 	public final TraitDeclContext traitDecl() throws RecognitionException {
@@ -1393,14 +1225,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_traitMemberDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterTraitMemberDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitTraitMemberDecl(this);
-		}
 	}
 
 	public final TraitMemberDeclContext traitMemberDecl() throws RecognitionException {
@@ -1473,14 +1297,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_functionSignatureDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterFunctionSignatureDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitFunctionSignatureDecl(this);
-		}
 	}
 
 	public final FunctionSignatureDeclContext functionSignatureDecl() throws RecognitionException {
@@ -1579,14 +1395,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_methodSignatureDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMethodSignatureDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMethodSignatureDecl(this);
-		}
 	}
 
 	public final MethodSignatureDeclContext methodSignatureDecl() throws RecognitionException {
@@ -1668,14 +1476,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_fieldDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterFieldDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitFieldDecl(this);
-		}
 	}
 
 	public final FieldDeclContext fieldDecl() throws RecognitionException {
@@ -1722,14 +1522,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_identifierType; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterIdentifierType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitIdentifierType(this);
-		}
 	}
 
 	public final IdentifierTypeContext identifierType() throws RecognitionException {
@@ -1769,14 +1561,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_parameters; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterParameters(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitParameters(this);
-		}
 	}
 
 	public final ParametersContext parameters() throws RecognitionException {
@@ -1841,14 +1625,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_functionDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterFunctionDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitFunctionDecl(this);
-		}
 	}
 
 	public final FunctionDeclContext functionDecl() throws RecognitionException {
@@ -1890,14 +1666,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_methodDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMethodDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMethodDecl(this);
-		}
 	}
 
 	public final MethodDeclContext methodDecl() throws RecognitionException {
@@ -1940,14 +1708,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_constructorDecl; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterConstructorDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitConstructorDecl(this);
-		}
 	}
 
 	public final ConstructorDeclContext constructorDecl() throws RecognitionException {
@@ -1989,14 +1749,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_disj; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDisj(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDisj(this);
-		}
 	}
 
 	public final DisjContext disj() throws RecognitionException {
@@ -2119,14 +1871,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_expression; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterExpression(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitExpression(this);
-		}
 	}
 
 	public final ExpressionContext expression() throws RecognitionException {
@@ -2499,14 +2243,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_datatypeFieldUpdate; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDatatypeFieldUpdate(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDatatypeFieldUpdate(this);
-		}
 	}
 
 	public final DatatypeFieldUpdateContext datatypeFieldUpdate() throws RecognitionException {
@@ -2543,14 +2279,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_modulus; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterModulus(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitModulus(this);
-		}
 	}
 
 	public final ModulusContext modulus() throws RecognitionException {
@@ -2588,14 +2316,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_multisetConversion; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMultisetConversion(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMultisetConversion(this);
-		}
 	}
 
 	public final MultisetConversionContext multisetConversion() throws RecognitionException {
@@ -2646,14 +2366,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_literal; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterLiteral(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitLiteral(this);
-		}
 	}
 
 	public final LiteralContext literal() throws RecognitionException {
@@ -2725,14 +2437,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_callParameters; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterCallParameters(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitCallParameters(this);
-		}
 	}
 
 	public final CallParametersContext callParameters() throws RecognitionException {
@@ -2801,14 +2505,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_functionCall; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterFunctionCall(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitFunctionCall(this);
-		}
 	}
 
 	public final FunctionCallContext functionCall() throws RecognitionException {
@@ -2847,14 +2543,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_classInstantiation; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterClassInstantiation(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitClassInstantiation(this);
-		}
 	}
 
 	public final ClassInstantiationContext classInstantiation() throws RecognitionException {
@@ -2894,14 +2582,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_datatypeInstantiation; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDatatypeInstantiation(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDatatypeInstantiation(this);
-		}
 	}
 
 	public final DatatypeInstantiationContext datatypeInstantiation() throws RecognitionException {
@@ -2942,14 +2622,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_ternaryExpression; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterTernaryExpression(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitTernaryExpression(this);
-		}
 	}
 
 	public final TernaryExpressionContext ternaryExpression() throws RecognitionException {
@@ -3003,14 +2675,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_matchExpression; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMatchExpression(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMatchExpression(this);
-		}
 	}
 
 	public final MatchExpressionContext matchExpression() throws RecognitionException {
@@ -3068,14 +2732,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_caseExpression; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterCaseExpression(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitCaseExpression(this);
-		}
 	}
 
 	public final CaseExpressionContext caseExpression() throws RecognitionException {
@@ -3116,14 +2772,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arrayLength; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterArrayLength(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitArrayLength(this);
-		}
 	}
 
 	public final ArrayLengthContext arrayLength() throws RecognitionException {
@@ -3163,14 +2811,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_index; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterIndex(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitIndex(this);
-		}
 	}
 
 	public final IndexContext index() throws RecognitionException {
@@ -3228,14 +2868,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_setDisplay; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterSetDisplay(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitSetDisplay(this);
-		}
 	}
 
 	public final SetDisplayContext setDisplay() throws RecognitionException {
@@ -3314,14 +2946,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_setComprehension; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterSetComprehension(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitSetComprehension(this);
-		}
 	}
 
 	public final SetComprehensionContext setComprehension() throws RecognitionException {
@@ -3367,14 +2991,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_sequenceDisplay; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterSequenceDisplay(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitSequenceDisplay(this);
-		}
 	}
 
 	public final SequenceDisplayContext sequenceDisplay() throws RecognitionException {
@@ -3449,14 +3065,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_sequenceComprehension; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterSequenceComprehension(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitSequenceComprehension(this);
-		}
 	}
 
 	public final SequenceComprehensionContext sequenceComprehension() throws RecognitionException {
@@ -3522,14 +3130,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_mapConstructor; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMapConstructor(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMapConstructor(this);
-		}
 	}
 
 	public final MapConstructorContext mapConstructor() throws RecognitionException {
@@ -3600,14 +3200,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_mapComprehension; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMapComprehension(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMapComprehension(this);
-		}
 	}
 
 	public final MapComprehensionContext mapComprehension() throws RecognitionException {
@@ -3657,14 +3249,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_indexElem; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterIndexElem(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitIndexElem(this);
-		}
 	}
 
 	public final IndexElemContext indexElem() throws RecognitionException {
@@ -3734,14 +3318,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_statement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitStatement(this);
-		}
 	}
 
 	public final StatementContext statement() throws RecognitionException {
@@ -3858,14 +3434,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_assertStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterAssertStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitAssertStatement(this);
-		}
 	}
 
 	public final AssertStatementContext assertStatement() throws RecognitionException {
@@ -3900,14 +3468,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_breakStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterBreakStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitBreakStatement(this);
-		}
 	}
 
 	public final BreakStatementContext breakStatement() throws RecognitionException {
@@ -3940,14 +3500,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_continueStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterContinueStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitContinueStatement(this);
-		}
 	}
 
 	public final ContinueStatementContext continueStatement() throws RecognitionException {
@@ -3988,14 +3540,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_declIdentifier; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDeclIdentifier(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDeclIdentifier(this);
-		}
 	}
 
 	public final DeclIdentifierContext declIdentifier() throws RecognitionException {
@@ -4067,14 +3611,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_declAssignLhs; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDeclAssignLhs(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDeclAssignLhs(this);
-		}
 	}
 
 	public final DeclAssignLhsContext declAssignLhs() throws RecognitionException {
@@ -4122,14 +3658,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_declAssignRhs; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDeclAssignRhs(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDeclAssignRhs(this);
-		}
 	}
 
 	public final DeclAssignRhsContext declAssignRhs() throws RecognitionException {
@@ -4179,14 +3707,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_declarationLhs; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDeclarationLhs(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDeclarationLhs(this);
-		}
 	}
 
 	public final DeclarationLhsContext declarationLhs() throws RecognitionException {
@@ -4244,14 +3764,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_declaration; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDeclaration(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDeclaration(this);
-		}
 	}
 
 	public final DeclarationContext declaration() throws RecognitionException {
@@ -4303,14 +3815,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_assignmentLhs; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterAssignmentLhs(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitAssignmentLhs(this);
-		}
 	}
 
 	public final AssignmentLhsContext assignmentLhs() throws RecognitionException {
@@ -4352,14 +3856,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_assignment; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterAssignment(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitAssignment(this);
-		}
 	}
 
 	public final AssignmentContext assignment() throws RecognitionException {
@@ -4435,14 +3931,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_print; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterPrint(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitPrint(this);
-		}
 	}
 
 	public final PrintContext print() throws RecognitionException {
@@ -4499,14 +3987,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_voidMethodCall; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterVoidMethodCall(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitVoidMethodCall(this);
-		}
 	}
 
 	public final VoidMethodCallContext voidMethodCall() throws RecognitionException {
@@ -4546,14 +4026,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_sequence; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterSequence(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitSequence(this);
-		}
 	}
 
 	public final SequenceContext sequence() throws RecognitionException {
@@ -4606,14 +4078,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_matchStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterMatchStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitMatchStatement(this);
-		}
 	}
 
 	public final MatchStatementContext matchStatement() throws RecognitionException {
@@ -4671,14 +4135,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_caseStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterCaseStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitCaseStatement(this);
-		}
 	}
 
 	public final CaseStatementContext caseStatement() throws RecognitionException {
@@ -4725,14 +4181,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_ifStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterIfStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitIfStatement(this);
-		}
 	}
 
 	public final IfStatementContext ifStatement() throws RecognitionException {
@@ -4809,14 +4257,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_forallStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterForallStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitForallStatement(this);
-		}
 	}
 
 	public final ForallStatementContext forallStatement() throws RecognitionException {
@@ -4886,14 +4326,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_forLoop; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterForLoop(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitForLoop(this);
-		}
 	}
 
 	public final ForLoopContext forLoop() throws RecognitionException {
@@ -4967,14 +4399,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_whileStatement; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterWhileStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitWhileStatement(this);
-		}
 	}
 
 	public final WhileStatementContext whileStatement() throws RecognitionException {
@@ -5049,14 +4473,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_verifierAnnotation; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterVerifierAnnotation(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitVerifierAnnotation(this);
-		}
 	}
 
 	public final VerifierAnnotationContext verifierAnnotation() throws RecognitionException {
@@ -5133,14 +4549,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_decreases; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterDecreases(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitDecreases(this);
-		}
 	}
 
 	public final DecreasesContext decreases() throws RecognitionException {
@@ -5176,14 +4584,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_ensures; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterEnsures(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitEnsures(this);
-		}
 	}
 
 	public final EnsuresContext ensures() throws RecognitionException {
@@ -5219,14 +4619,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_invariant; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterInvariant(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitInvariant(this);
-		}
 	}
 
 	public final InvariantContext invariant() throws RecognitionException {
@@ -5262,14 +4654,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_modifies; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterModifies(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitModifies(this);
-		}
 	}
 
 	public final ModifiesContext modifies() throws RecognitionException {
@@ -5305,14 +4689,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_reads; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterReads(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitReads(this);
-		}
 	}
 
 	public final ReadsContext reads() throws RecognitionException {
@@ -5348,14 +4724,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_requires; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterRequires(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitRequires(this);
-		}
 	}
 
 	public final RequiresContext requires() throws RecognitionException {
@@ -5400,14 +4768,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arrayConstructor; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterArrayConstructor(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitArrayConstructor(this);
-		}
 	}
 
 	public final ArrayConstructorContext arrayConstructor() throws RecognitionException {
@@ -5472,14 +4832,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arrayComprehension; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterArrayComprehension(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitArrayComprehension(this);
-		}
 	}
 
 	public final ArrayComprehensionContext arrayComprehension() throws RecognitionException {
@@ -5523,14 +4875,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arrayValues; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterArrayValues(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitArrayValues(this);
-		}
 	}
 
 	public final ArrayValuesContext arrayValues() throws RecognitionException {
@@ -5587,14 +4931,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_topDeclMember; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterTopDeclMember(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitTopDeclMember(this);
-		}
 	}
 
 	public final TopDeclMemberContext topDeclMember() throws RecognitionException {
@@ -5645,14 +4981,6 @@ public class dafnyParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_program; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).enterProgram(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof dafnyListener ) ((dafnyListener)listener).exitProgram(this);
-		}
 	}
 
 	public final ProgramContext program() throws RecognitionException {

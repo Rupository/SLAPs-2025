@@ -7,12 +7,12 @@
 
 - Copy `dafny.g4` from the [dafny-antlr](https://github.com/fuzz-d/dafny-antlr) parsing library into `/installs`.
 
--  Edit the forLoop syntax to include invariants:
+-  Edit the forLoop syntax in `dafny.g4` to include invariants:
     ```antlr
     forLoop: FOR identifier ':=' expression TO expression (verifierAnnotation)* '{' sequence '}';
     ```
 
-- Create a directory for the python parser module we'll build (`dfyPyParse`) using ANTLR and run the following to save it as a module:
+- Create a directory for the python parser module we'll build (`dfyPyParse`) using ANTLR and run the following:
     ```bash
     java -jar installs/antlr-4.13.2-complete.jar -Dlanguage=Python3 -visitor -no-listener -o dfyPyParse installs/dafny.g4
     ```
