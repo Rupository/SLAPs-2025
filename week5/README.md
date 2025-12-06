@@ -1,5 +1,5 @@
 
-#### How to replicate environment
+### How to replicate environment
 
 - Install Java 25 from OpenJDK
 
@@ -23,7 +23,7 @@
     pip install antlr4-python3-runtime
     ```
 
-##### How to run
+### How to run
 
 - Run the following command:
     ```bash
