@@ -116,8 +116,8 @@ class DafnyJSONVisitor(dafnyVisitor):
         variables.insert(0, {
             "name": loop_var,
             "type": "int",
-            "initially": start_expr,
-            "assignment": f"{loop_var} + 1"
+            "init": start_expr,
+            "trans": f"{loop_var} + 1"
         })
 
         loop_obj = {

@@ -7,8 +7,8 @@ method Sum(n: int) returns (result: int)
   var sum := 0;
   
   while (i <= n)
-    invariant 0 <= i <= n + 1
-    invariant sum == i * (i - 1) / 2
+    //invariant 0 <= i <= n + 1
+    //invariant sum == i * (i - 1) / 2
   {
     sum := sum + i;
     i := i + 1;
@@ -24,9 +24,9 @@ method Factorial(n: int) returns (result: int)
 {
   result := 1;
   
-  for i := 1 to n // needs to be n+1
-    invariant 1 <= i <= n + 1
-    invariant result >= 1
+  for i := 1 to n+1 // needs to be n+1
+    //invariant 1 <= i <= n + 1
+    //invariant result >= 1
   {
     result := result * i;
   }
