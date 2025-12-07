@@ -37,4 +37,4 @@ Dafny program verifier finished with 3 verified, 0 errors
 	- Solution
 		- Required installing the latest Z3 release on my Windows system
 			- This then needed to be added to the system PATH, which required restarting the system. Even when added to PATH, VSCode (and presumably applications other than Command Prompt and Powershell) would update their internal references to PATH only after a full restart.
-		- After this, ran`dafny verify <filename>.dfy` without issue
+		- After this, ran `dafny verify <filename>.dfy` without issue

@@ -1,18 +1,25 @@
-// to-binary notation
-// Inspired by ICS
+// heptagonal pyramidal numbers - as running sum of heagonal numbers
+// https://oeis.org/A002413
+// https://en.wikipedia.org/wiki/Pyramidal_number
 
-method Sum(n: int) returns (result: int)
-  requires n >= 0
-  ensures result == n * (n + 1) / 2
+method HeptagonalPyramidal(n: int) returns (j: int)
+  requires n > 0
+  ensures j == n*(n+1)*(5*n-2)/6
 {
   var i := 0;
-  var sum := 0;
-  
-  while (i <= n) invariant 0 <= i <= n + 1 invariant sum == i * (i - 1) / 2
+  var k := 0;
+  j := 0;
+
+  while i < n
+    invariant 0 <= i <= n
+    invariant j == i*(i+1)*(5*i-2)/6
+    invariant k == i*(5*i-3)/2
+
+    // helper invariant
+    invariant i*(5*i-3) % 2 == 0 
   {
-    sum := sum + i;
     i := i + 1;
+    k := k + 5*i - 4;
+    j := j + k; 
   }
-  
-  result := sum;
 }

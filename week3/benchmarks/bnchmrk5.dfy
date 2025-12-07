@@ -1,28 +1,26 @@
-// Permutation
-// Inspired by ICS, Factorial example in week 1
+// tetrahedral numbers - as running sum of triangular numbers
+// https://en.wikipedia.org/wiki/Tetrahedral_number
+// https://en.wikipedia.org/wiki/Pyramidal_number
 
-method Permutation(n: int, k:int) returns (j:int)
-    requires n >= 0
-    requires 0 <= k <= n
-    ensures j == permutation(n,k)
+method Tetrahedral(n: int) returns (j: int)
+  requires n > 0
+  ensures j == (n*(n+1)*(n+2))/6
 {
-    var i := 0;
-    j := 1;
+  var i := 0;
+  var k := 0;
+  j := 0;
 
-    while i < k
-        invariant 0 <= i <= k
-        invariant j == permutation(n,i)
-        decreases k-i
-    {
-        j := j*(n-i);
-        i := i+1;
-    }
-}
+  while i < n
+    invariant 0 <= i <= n
+    invariant j == (i*(i+1)*(i+2))/6
+    invariant k == (i*(i+1))/2 
 
-function permutation(n:int, k:int) : int
-    requires n >= 0
-    requires 0 <= k <= n
-{
-    if k == 0 then 1
-    else (permutation(n,k-1))*(n-k+1)
+    // helper invariant: teaches dafny arithmetic
+    // enterprise LLMs were not able to zero-shot this (as of 2025-12-07)
+    invariant (i*(i+1)) % 2 == 0 
+  {
+    i := i + 1;
+    k := k + i;
+    j := j + k; 
+  }
 }

@@ -1,37 +1,18 @@
-// lucas numbers: 2, 1, 3, 4, 7, 11, 18, ...
-// inspired by ICS and DM
+// triangular numbers - recurrence and closed form
+// https://en.wikipedia.org/wiki/Triangular_number
 
-
-method Lucas(n: int) returns (x : int)
-    requires n >= 1
-    ensures x == lucas(n)
+method Triangular(n: int) returns (j: int)
+    requires n > 0
+    ensures j == (n*(n+1))/2
 {
-    x := 2;
-    var y := 1;
-    var temp;
-    var i := 1;
+    var i := 0;
+    j := 0;
 
     while i < n
-        invariant 1 <= i <= n
-        invariant x == lucas(i)
-        invariant y == lucas(i+1)
-        
-        decreases n - i
+        invariant 0 <= i <= n
+        invariant j == (i*(i+1))/2
     {
-        temp := y;
-        y := y + x;
-        x := temp;
-
-        i := i+1;
+        i := i + 1;
+        j := j + i;
     }
-}
-
-function lucas(n: int): int
-    requires n >= 1
-    decreases n
-{
-    if n == 1 then 2
-    else if n == 2 then 1
-
-    else lucas(n-2) + lucas(n-1)
 }

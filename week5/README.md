@@ -27,6 +27,6 @@
 
 - Run the following command:
     ```bash
-    python parser.py <your_file_1> [<your_file_2>.dfy]
+    python parser.py <your_file>.dfy
     ```
     You may use more than one file

@@ -125,11 +125,15 @@ class DafnyJSONVisitor(dafnyVisitor):
         # loop body variables
         variables = self.analyze_loop_variables(ctx.sequence()) # important, check downstream
 
+        # define point in program where generated invariants should get inserted
+        line_no = ctx.start.line
+
         loop_obj = {
             "type": "while",
             "condition": ctx.expression().getText(),
             "variables": variables,
-            "invariants": invariants
+            "invariants": invariants,
+            "insertion_pt": line_no,
         }
         self.current_method["loops"].append(loop_obj)
 
@@ -180,13 +184,16 @@ class DafnyJSONVisitor(dafnyVisitor):
             "trans": f"{loop_var} + 1"
         })
 
+        line_no = ctx.start.line
+
         loop_obj = {
             "type": "for",
             "condition": f"{loop_var} < {end_expr}", 
             # condition in for loops is fixed. not limits inclusive
             # https://dafny.org/dafny/DafnyRef/DafnyRef#sec-for-statement
             "variables": variables,
-            "invariants": invariants
+            "invariants": invariants,
+            "insertion_pt": line_no,
         }
         self.current_method["loops"].append(loop_obj)
         
@@ -219,24 +226,64 @@ class DafnyJSONVisitor(dafnyVisitor):
 
     def scan_loop_assignments(self, sequence_ctx):
         # finds variables updates/assignments, same logic as visitDeclaration
+        # REFACTORED: Now uses recursion to handle IF/ELSE conditions
+        return self._traverse_body(sequence_ctx, {})
 
-        updates = {}
-        if not sequence_ctx or not sequence_ctx.statement(): 
-            return updates
+    def _traverse_body(self, sequence_ctx, state: dict) -> dict:
+        if not sequence_ctx or not sequence_ctx.statement():
+            return state
 
         for stmt in sequence_ctx.statement():
+            
+            # simple assignment
             if stmt.assignment():
-                assign = stmt.assignment()
-                lhs_list = assign.assignmentLhs()
-                rhs_list = assign.declAssignRhs()
-                
-                lhs_texts = [x.getText() for x in lhs_list]
-                rhs_texts = [x.getText() for x in rhs_list] if isinstance(rhs_list, list) else [rhs_list.getText()]
+                self._apply_assignment(stmt.assignment(), state)
 
-                for i, var_name in enumerate(lhs_texts):
-                    updates[var_name] = rhs_texts[i]
+            # conditional assignment
+            elif stmt.ifStatement():
+                self._apply_conditional(stmt.ifStatement(), state)
 
-        return updates
+        return state
+
+    def _apply_assignment(self, ctx: dafnyParser.AssignmentContext, state: dict):
+        # applies assignment rule as transition
+        lhs_vars = [x.getText() for x in ctx.assignmentLhs()]
+        
+        rhs_raw = ctx.declAssignRhs()
+        rhs_vals = [x.getText() for x in rhs_raw] if isinstance(rhs_raw, list) else [rhs_raw.getText()]
+
+        for var_name, new_val in zip(lhs_vars, rhs_vals):
+            state[var_name] = new_val
+
+    def _apply_conditional(self, ctx: dafnyParser.IfStatementContext, state: dict):
+        # formats transtion as conditional statement (If Then Else)
+        condition = ctx.expression().getText()
+        
+        # get 'then' state
+        then_state = self._traverse_body(ctx.sequence(0), state.copy())
+
+        # get 'else' state if it exists
+        else_state = state.copy()
+        if ctx.ELSE():
+            else_state = self._traverse_body(ctx.sequence(1), else_state)
+
+        # combine them as one transition
+        self._merge_states(state, condition, then_state, else_state)
+
+    def _merge_states(self, target_state: dict, cond: str, then_st: dict, else_st: dict):
+        # get updated variables in either branch
+        all_vars = set(then_st.keys()) | set(else_st.keys())
+
+        for var in all_vars:
+            # get assignment based on branch version
+            val_true = then_st.get(var, target_state.get(var, var))
+            val_false = else_st.get(var, target_state.get(var, var))
+
+            if val_true == val_false:
+                target_state[var] = val_true
+            else:
+                # Python ternary syntax: value_if_true if condition else value_if_false
+                target_state[var] = f"({val_true}) if ({cond}) else ({val_false})"
 
 def parse_file(file_path):
     input_stream = FileStream(file_path, encoding='utf-8')
@@ -247,31 +294,15 @@ def parse_file(file_path):
     visitor = DafnyJSONVisitor()
     return visitor.visit(tree)
 
-def parse_batch(file_paths):
-    results = {}
-    for path in file_paths:
-        try:
-            results[path] = parse_file(path)
-        except Exception as e:
-            print(f"Error parsing {path}: {e}", file=sys.stderr)
-            results[path] = None
-            
-    return results
-
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python parser.py <your_file_1> [<your_file_2>.dfy]")
-        return
-
-    files_to_process = sys.argv[1:]
-
-    all_data = parse_batch(files_to_process)
-
-    if len(files_to_process) == 1:
-        single_key = files_to_process[0]
-        print(json.dumps(all_data[single_key], indent=2))
+    if len(sys.argv) > 1:
+        # 1. Get the data object
+        data = parse_file(sys.argv[1])
+        
+        # 2. Convert to JSON and print only for CLI usage
+        print(json.dumps(data, indent=2))
     else:
-        print(json.dumps(all_data, indent=2))
+        print("Usage: parser.py <your_file>.dfy")
 
 if __name__ == '__main__':
     main()

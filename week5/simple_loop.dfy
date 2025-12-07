@@ -7,8 +7,8 @@ method Sum(n: int) returns (result: int)
   var sum := 0;
   
   while (i <= n)
-    invariant 0 <= i <= n + 1
     invariant sum == i * (i - 1) / 2
+    invariant 0 <= i <= n + 1
   {
     sum := sum + i;
     i := i + 1;

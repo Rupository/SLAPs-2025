@@ -1,19 +1,18 @@
-// sum of positive odd numbers gives positive integer squares
-// inspired by NCERT exercises on Induction
+// pentagonal numbers - recurrence and closed form
+// https://en.wikipedia.org/wiki/Pentagonal_number
 
-method square(n: int) returns (j: int)
+method Pentagonal(n: int) returns (j: int)
     requires n > 0
-    ensures j == n*n
+    ensures j == (3*n*n - n)/2
 {
     var i := 1;
     j := 1;
 
     while i < n
         invariant 1 <= i <= n
-        invariant j == i*i
+        invariant j == (3*i*i - i)/2
     {
-
-        j := j + (2*i + 1);
         i := i + 1;
+        j := j + 3*i - 2;
     }
 }
