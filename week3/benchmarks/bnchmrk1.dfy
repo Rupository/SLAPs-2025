@@ -8,7 +8,7 @@ method Triangular(n: int) returns (j: int)
     var i := 0;
     j := 0;
 
-    while i < n
+    while (i < n)
         invariant 0 <= i <= n
         invariant j == (i*(i+1))/2
     {

@@ -10,7 +10,7 @@ method PentagonalPyramidal(n: int) returns (j: int)
   var k := 0;
   j := 0;
 
-  while i < n
+  while (i < n)
     invariant 0 <= i <= n
     invariant j == (i*i*(i+1))/2
     invariant k == (3*i*i - i)/2

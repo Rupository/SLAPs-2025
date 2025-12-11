@@ -96,7 +96,7 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         self.visitChildren(ctx)
 
-    def visitMethodAssignments(self, ctx: dafnyParser.AssignmentContext):
+    def visitAssignment(self, ctx: dafnyParser.AssignmentContext):
         # same idea as decleration - some declared variables may get updated before the loop starts.
         # we want to keep track of their states exactly as they were before the loop began
         
