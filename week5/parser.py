@@ -122,16 +122,23 @@ class DafnyJSONVisitor(dafnyVisitor):
                 if note.invariant():
                     invariants.append(note.invariant().expression().getText())
 
-        # loop body variables
-        variables = self.analyze_loop_variables(ctx.sequence()) # important, check downstream
+        # Analyze paths instead of variables directly
+        paths = self.analyze_loop_paths(ctx.sequence())
 
+        # Collect all variables modified across all paths for the top-level list
+        all_modified_vars = set()
+        for p in paths:
+            for u in p["updates"]:
+                all_modified_vars.add(u["name"])
+        
         # define point in program where generated invariants should get inserted
         line_no = ctx.start.line
 
         loop_obj = {
             "type": "while",
             "condition": ctx.expression().getText(),
-            "variables": variables,
+            "variables": list(all_modified_vars), # Just names at top level now
+            "paths": paths, # Distinct execution paths
             "invariants": invariants,
             "insertion_pt": line_no,
         }
@@ -148,10 +155,9 @@ class DafnyJSONVisitor(dafnyVisitor):
         self.state = previous_state
 
         # and mark any updated variables as such
-        for var in variables:
-            name = var["name"]
-            if name in self.state:
-                self.state[name] = "unknown-post-loop"
+        for var_name in all_modified_vars:
+            if var_name in self.state:
+                self.state[var_name] = "unknown-post-loop"
 
     def visitForLoop(self, ctx: dafnyParser.ForLoopContext):
         # largely same idea as while loops
@@ -174,15 +180,28 @@ class DafnyJSONVisitor(dafnyVisitor):
         # We add it to the backpack immediately so nested logic can see it.
         self.state[loop_var] = start_expr
         
-        variables = self.analyze_loop_variables(ctx.sequence())
+        paths = self.analyze_loop_paths(ctx.sequence())
 
-        # Explicitly add the loop counter to the variables list
-        variables.insert(0, {
+        # For loops imply an increment of the iterator in every path
+        # We append this explicitly to every path found
+        iterator_update = {
             "name": loop_var,
             "type": "int",
             "init": start_expr,
             "trans": f"{loop_var} + 1"
-        })
+        }
+
+        all_modified_vars = set()
+        all_modified_vars.add(loop_var)
+
+        for p in paths:
+            # Add iterator update to this path
+            # Check if user manually messed with iterator (rare but possible), if not add it
+            if not any(u["name"] == loop_var for u in p["updates"]):
+                p["updates"].insert(0, iterator_update)
+            
+            for u in p["updates"]:
+                all_modified_vars.add(u["name"])
 
         line_no = ctx.start.line
 
@@ -191,7 +210,8 @@ class DafnyJSONVisitor(dafnyVisitor):
             "condition": f"{loop_var} < {end_expr}", 
             # condition in for loops is fixed. not limits inclusive
             # https://dafny.org/dafny/DafnyRef/DafnyRef#sec-for-statement
-            "variables": variables,
+            "variables": list(all_modified_vars),
+            "paths": paths,
             "invariants": invariants,
             "insertion_pt": line_no,
         }
@@ -201,89 +221,131 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         self.state = previous_state
 
-        for var in variables:
-            name = var["name"]
-            if name != loop_var and name in self.state: 
+        for var_name in all_modified_vars:
+            if var_name != loop_var and var_name in self.state: 
                 # skip iterator as it was restored properly 
                 # (iterator in for loop is dropped)
-                self.state[name] = "unknown-post-loop"
+                self.state[var_name] = "unknown-post-loop"
 
-    def analyze_loop_variables(self, body_sequence):
-        # find variable transitions in the loop body
-        updates = self.scan_loop_assignments(body_sequence)
+    def analyze_loop_paths(self, sequence_ctx):
+        # NEW: Instead of scanning for variables, we recursively explore paths
+        # Returns a list of path objects
+        
+        if not sequence_ctx or not sequence_ctx.statement():
+            # Empty loop body, one path, no updates
+            return [{
+                "guard": "true",
+                "updates": []
+            }]
+
+        stmts = sequence_ctx.statement()
+        # Start exploration with empty guard list and current state copy
+        raw_paths = self._explore_paths(stmts, [], self.state.copy())
+
+        # Convert raw states back into "updates" list (init vs trans)
         results = []
-
-        for var_name, assignment_expr in updates.items():
-            initial_val = self.state.get(var_name, None) # get initial vals from state
+        for i, path_data in enumerate(raw_paths):
+            guard_list = path_data["guards"]
+            final_state = path_data["state"]
             
+            # Construct guard string
+            guard_str = " && ".join(guard_list) if guard_list else "true"
+            
+            # Compare final_state with self.state (pre-loop) to find updates
+            updates = []
+            
+            # We look at every variable in the final_state
+            for var_name, final_val in final_state.items():
+                initial_val = self.state.get(var_name, None)
+                
+                # If value changed OR it's a new variable declared inside loop
+                if final_val != initial_val:
+                    updates.append({
+                        "name": var_name,
+                        "type": "int", # inference is hard, defaulting to int as per original
+                        "init": initial_val,
+                        "trans": final_val
+                    })
+
             results.append({
-                "name": var_name,
-                "type": "int",
-                "init": initial_val,
-                "trans": assignment_expr # get transition assignment from scan_for_updates()
+                "guard": guard_str,
+                "updates": updates
             })
+            
         return results
 
-    def scan_loop_assignments(self, sequence_ctx):
-        # finds variables updates/assignments, same logic as visitDeclaration
-        # REFACTORED: Now uses recursion to handle IF/ELSE conditions
-        return self._traverse_body(sequence_ctx, {})
+    def _explore_paths(self, stmts, current_guards, current_state):
+        # Recursive function to traverse statements and fork on IFs
+        if not stmts:
+            return [{"guards": current_guards, "state": current_state}]
 
-    def _traverse_body(self, sequence_ctx, state: dict) -> dict:
-        if not sequence_ctx or not sequence_ctx.statement():
-            return state
+        stmt = stmts[0]
+        remaining = stmts[1:]
 
-        for stmt in sequence_ctx.statement():
+        if stmt.ifStatement():
+            # Forking logic
+            if_ctx = stmt.ifStatement()
+            condition = if_ctx.expression().getText()
+
+            # Branch 1: THEN
+            then_seq = if_ctx.sequence(0)
+            then_stmts = then_seq.statement() if then_seq else []
+            # We prepend the 'then' statements to the 'remaining' statements
+            # effectively flattening the control flow for this path
+            paths_then = self._explore_paths(
+                then_stmts + remaining, 
+                current_guards + [f"({condition})"], 
+                current_state.copy()
+            )
+
+            # Branch 2: ELSE
+            else_stmts = []
+            if if_ctx.ELSE():
+                else_seq = if_ctx.sequence(1)
+                else_stmts = else_seq.statement() if else_seq else []
             
-            # simple assignment
-            if stmt.assignment():
-                self._apply_assignment(stmt.assignment(), state)
+            paths_else = self._explore_paths(
+                else_stmts + remaining,
+                current_guards + [f"!({condition})"],
+                current_state.copy()
+            )
 
-            # conditional assignment
-            elif stmt.ifStatement():
-                self._apply_conditional(stmt.ifStatement(), state)
+            return paths_then + paths_else
 
-        return state
+        elif stmt.assignment():
+            # Apply assignment to current_state
+            self._apply_assignment(stmt.assignment(), current_state)
+            return self._explore_paths(remaining, current_guards, current_state)
+
+        elif stmt.declaration():
+            # Treat declaration as assignment (init inside path)
+            self._apply_declaration(stmt.declaration(), current_state)
+            return self._explore_paths(remaining, current_guards, current_state)
+
+        else:
+            # Skip other statements (Print, Assert, etc) regarding state
+            return self._explore_paths(remaining, current_guards, current_state)
 
     def _apply_assignment(self, ctx: dafnyParser.AssignmentContext, state: dict):
-        # applies assignment rule as transition
         lhs_vars = [x.getText() for x in ctx.assignmentLhs()]
-        
         rhs_raw = ctx.declAssignRhs()
         rhs_vals = [x.getText() for x in rhs_raw] if isinstance(rhs_raw, list) else [rhs_raw.getText()]
 
         for var_name, new_val in zip(lhs_vars, rhs_vals):
             state[var_name] = new_val
 
-    def _apply_conditional(self, ctx: dafnyParser.IfStatementContext, state: dict):
-        # formats transtion as conditional statement (If Then Else)
-        condition = ctx.expression().getText()
+    def _apply_declaration(self, ctx: dafnyParser.DeclarationContext, state: dict):
+        lhs_ctx = ctx.declarationLhs()
+        lhs_vars = [item.getText() for item in lhs_ctx.declAssignLhs()]
         
-        # get 'then' state
-        then_state = self._traverse_body(ctx.sequence(0), state.copy())
+        rhs_ctx = ctx.declAssignRhs()
+        if isinstance(rhs_ctx, list):
+             rhs_vals = [item.getText() for item in rhs_ctx]
+        else:
+             rhs_vals = [rhs_ctx.getText()]
 
-        # get 'else' state if it exists
-        else_state = state.copy()
-        if ctx.ELSE():
-            else_state = self._traverse_body(ctx.sequence(1), else_state)
-
-        # combine them as one transition
-        self._merge_states(state, condition, then_state, else_state)
-
-    def _merge_states(self, target_state: dict, cond: str, then_st: dict, else_st: dict):
-        # get updated variables in either branch
-        all_vars = set(then_st.keys()) | set(else_st.keys())
-
-        for var in all_vars:
-            # get assignment based on branch version
-            val_true = then_st.get(var, target_state.get(var, var))
-            val_false = else_st.get(var, target_state.get(var, var))
-
-            if val_true == val_false:
-                target_state[var] = val_true
-            else:
-                # Python ternary syntax: value_if_true if condition else value_if_false
-                target_state[var] = f"({val_true}) if ({cond}) else ({val_false})"
+        for i, var_name in enumerate(lhs_vars):    
+            state[var_name] = rhs_vals[i]
 
 def parse_file(file_path):
     input_stream = FileStream(file_path, encoding='utf-8')
