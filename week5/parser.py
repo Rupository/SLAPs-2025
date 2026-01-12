@@ -151,7 +151,7 @@ class DafnyJSONVisitor(dafnyVisitor):
         # update the state for any code that follows.
         self.visitChildren(ctx)
 
-        # restore - because you don't know the termination values
+        # restore - because we don't know the termination values
         self.state = previous_state
 
         # and mark any updated variables as such
@@ -177,13 +177,13 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         # for loop doesnt initialise "i" (loop increment) beforehand, 
         # needs to get added so we can interpret properly!
-        # We add it to the backpack immediately so nested logic can see it.
+        # we add it to the backpack immediately so nested logic can see it.
         self.state[loop_var] = start_expr
         
         paths = self.analyze_loop_paths(ctx.sequence())
 
-        # For loops imply an increment of the iterator in every path
-        # We append this explicitly to every path found
+        # for loops imply an increment of the iterator in every path
+        # add explicitly to every path found
         iterator_update = {
             "name": loop_var,
             "type": "int",
@@ -195,8 +195,7 @@ class DafnyJSONVisitor(dafnyVisitor):
         all_modified_vars.add(loop_var)
 
         for p in paths:
-            # Add iterator update to this path
-            # Check if user manually messed with iterator (rare but possible), if not add it
+            # add iterator update to this path
             if not any(u["name"] == loop_var for u in p["updates"]):
                 p["updates"].insert(0, iterator_update)
             
@@ -228,41 +227,42 @@ class DafnyJSONVisitor(dafnyVisitor):
                 self.state[var_name] = "unknown-post-loop"
 
     def analyze_loop_paths(self, sequence_ctx):
-        # NEW: Instead of scanning for variables, we recursively explore paths
-        # Returns a list of path objects
+        # recursively explore execution paths
+        # gives path objects
         
         if not sequence_ctx or not sequence_ctx.statement():
-            # Empty loop body, one path, no updates
+            # one path, no updates (yet)
             return [{
                 "guard": "true",
                 "updates": []
             }]
 
         stmts = sequence_ctx.statement()
-        # Start exploration with empty guard list and current state copy
+        # start exploration with raw 
         raw_paths = self._explore_paths(stmts, [], self.state.copy())
 
-        # Convert raw states back into "updates" list (init vs trans)
+        # convert raw states back into "updates" list (init vs trans)
         results = []
         for i, path_data in enumerate(raw_paths):
             guard_list = path_data["guards"]
             final_state = path_data["state"]
             
-            # Construct guard string
+            # construct local guard string
             guard_str = " && ".join(guard_list) if guard_list else "true"
             
-            # Compare final_state with self.state (pre-loop) to find updates
+            # compare final_state with self.state (pre-loop) to find updates
             updates = []
             
-            # We look at every variable in the final_state
+            # for all variables in the final_state
             for var_name, final_val in final_state.items():
                 initial_val = self.state.get(var_name, None)
                 
-                # If value changed OR it's a new variable declared inside loop
+                # if the value changed OR it's a new variable declared inside loop
                 if final_val != initial_val:
+                    # update
                     updates.append({
                         "name": var_name,
-                        "type": "int", # inference is hard, defaulting to int as per original
+                        "type": "int",
                         "init": initial_val,
                         "trans": final_val
                     })
@@ -275,7 +275,7 @@ class DafnyJSONVisitor(dafnyVisitor):
         return results
 
     def _explore_paths(self, stmts, current_guards, current_state):
-        # Recursive function to traverse statements and fork on IFs
+        # recursive function to traverse statements and fork on ITE statements
         if not stmts:
             return [{"guards": current_guards, "state": current_state}]
 
@@ -283,11 +283,10 @@ class DafnyJSONVisitor(dafnyVisitor):
         remaining = stmts[1:]
 
         if stmt.ifStatement():
-            # Forking logic
             if_ctx = stmt.ifStatement()
             condition = if_ctx.expression().getText()
 
-            # Branch 1: THEN
+            # THEN
             then_seq = if_ctx.sequence(0)
             then_stmts = then_seq.statement() if then_seq else []
             # We prepend the 'then' statements to the 'remaining' statements
@@ -298,7 +297,7 @@ class DafnyJSONVisitor(dafnyVisitor):
                 current_state.copy()
             )
 
-            # Branch 2: ELSE
+            # ELSE
             else_stmts = []
             if if_ctx.ELSE():
                 else_seq = if_ctx.sequence(1)
@@ -358,10 +357,8 @@ def parse_file(file_path):
 
 def main():
     if len(sys.argv) > 1:
-        # 1. Get the data object
         data = parse_file(sys.argv[1])
         
-        # 2. Convert to JSON and print only for CLI usage
         print(json.dumps(data, indent=2))
     else:
         print("Usage: parser.py <your_file>.dfy")
