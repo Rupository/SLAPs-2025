@@ -17,19 +17,3 @@ method Sum(n: int) returns (sum: int)
         i := i + 1;
     }
 }
-
-method Sum2(n: int) returns (sum: int)
-    requires n >= 0
-    ensures sum == n * (n - 1) / 2
-{
-    var i := 0;
-    sum := 0;
-    
-    while i < n
-        invariant i <= n
-        invariant sum == i * (i - 1) / 2
-    {
-        sum := sum + i;
-        i := i + 1;
-    }
-}
