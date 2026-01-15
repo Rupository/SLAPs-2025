@@ -289,7 +289,7 @@ class DafnyJSONVisitor(dafnyVisitor):
             # THEN
             then_seq = if_ctx.sequence(0)
             then_stmts = then_seq.statement() if then_seq else []
-            # We prepend the 'then' statements to the 'remaining' statements
+            # we prepend the 'then' statements to the 'remaining' statements
             # effectively flattening the control flow for this path
             paths_then = self._explore_paths(
                 then_stmts + remaining, 
@@ -312,17 +312,17 @@ class DafnyJSONVisitor(dafnyVisitor):
             return paths_then + paths_else
 
         elif stmt.assignment():
-            # Apply assignment to current_state
+            # apply assignment to current_state
             self._apply_assignment(stmt.assignment(), current_state)
             return self._explore_paths(remaining, current_guards, current_state)
 
         elif stmt.declaration():
-            # Treat declaration as assignment (init inside path)
+            # treat declaration as assignment (init inside path)
             self._apply_declaration(stmt.declaration(), current_state)
             return self._explore_paths(remaining, current_guards, current_state)
 
         else:
-            # Skip other statements (Print, Assert, etc) regarding state
+            # skip other stuff
             return self._explore_paths(remaining, current_guards, current_state)
 
     def _apply_assignment(self, ctx: dafnyParser.AssignmentContext, state: dict):
