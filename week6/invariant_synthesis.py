@@ -274,14 +274,7 @@ def process_all(params, preconditions, loops, degree):
             solve(*path_setup)
         
 if __name__ == "__main__":
-    # Get the directory where THIS script is located (week6/)
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Join it with the filename
     target_file = os.path.join(current_dir, 'test.dfy')
-
-    # Pass the full path to your function
     params, preconditions, loops = load_data(target_file, method_id=0)
-    
-    # Process the data...
     process_all(params, preconditions, loops, degree=2)
