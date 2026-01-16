@@ -4,7 +4,7 @@ method StressTest(n: int) returns (x: int)
     var i := 0;
     x := 1;
     
-    while (i < n) 
+    while (i < n && i <= n) 
         invariant 0 <= i <= n
     {
         // Path 1: Direct hit

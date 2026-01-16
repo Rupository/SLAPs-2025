@@ -1,29 +1,16 @@
-method StressTest(n: int) returns (x: int)
-    requires n > 0
+method Sum(n: int) returns (s: int)
+    requires n >= 0
+    ensures s == n * (n - 1) / 2
 {
     var i := 0;
-    x := 1;
+    s := 0;
     
-    while (i < n) 
+    while (i < n)
         invariant 0 <= i <= n
+        invariant s == i * (i - 1) / 2
+        decreases n - i
     {
-        // Path 1: Direct hit
-        if (i % 3 == 0) {
-            var bonus := 10; // DECLARATION inside path
-            x := x + bonus;
-        } 
-        else {
-            // Nested branching
-            if (i % 3 == 1) {
-                 // Path 2: Multiplier
-                 x := x * 2;
-            } else {
-                 // Path 3: Penalty
-                 x := x - 1;
-            }
-        }
-        
-        // Common update for ALL paths
+        s := s + i;
         i := i + 1;
     }
 }

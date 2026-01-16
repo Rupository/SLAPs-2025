@@ -25,8 +25,8 @@
 
 ### How to run
 
-- Run the following command:
+- Run the following command from the root directory:
     ```bash
-    python parser.py <your_file>.dfy
+    python -m week5.parser <path_to_your_file>.dfy
     ```
     You may use more than one file

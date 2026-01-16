@@ -1,9 +1,9 @@
 import sys
 import json
 from antlr4 import * # pyright: ignore[reportWildcardImportFromLibrary]
-from dfyPyParse.dafnyLexer import dafnyLexer
-from dfyPyParse.dafnyParser import dafnyParser
-from dfyPyParse.dafnyVisitor import dafnyVisitor
+from .dfyPyParse.dafnyLexer import dafnyLexer
+from .dfyPyParse.dafnyParser import dafnyParser
+from .dfyPyParse.dafnyVisitor import dafnyVisitor
 
 # [AI DISCLOSURE] - I don't know how ANTLR works, so I generated this and 
 # have commented how it works after thouroughly going over it. Added an 
@@ -111,6 +111,18 @@ class DafnyJSONVisitor(dafnyVisitor):
         
         self.visitChildren(ctx)
 
+    def _split_conditions(self, expr_ctx):
+        # seperates conditions &&-ed together into a list - helps with more complex loops
+        if expr_ctx.getChildCount() == 3:
+            op = expr_ctx.getChild(1).getText()
+            if op == "&&":
+                left = expr_ctx.getChild(0)
+                right = expr_ctx.getChild(2)
+                return self._split_conditions(left) + self._split_conditions(right)
+        
+        # Base case: just return the text of this condition
+        return [expr_ctx.getText()]
+
     def visitWhileStatement(self, ctx: dafnyParser.WhileStatementContext):
         # same idea as methodDecl - figure out what's up in the while loop
         if self.current_method is None: return
@@ -136,7 +148,7 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         loop_obj = {
             "type": "while",
-            "condition": ctx.expression().getText(),
+            "conditions": self._split_conditions(ctx.expression()), 
             "variables": list(all_modified_vars), # Just names at top level now
             "paths": paths, # Distinct execution paths
             "invariants": invariants,
@@ -206,7 +218,7 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         loop_obj = {
             "type": "for",
-            "condition": f"{loop_var} < {end_expr}", 
+            "conditions": [f"{loop_var} < {end_expr}"], 
             # condition in for loops is fixed. not limits inclusive
             # https://dafny.org/dafny/DafnyRef/DafnyRef#sec-for-statement
             "variables": list(all_modified_vars),
@@ -233,7 +245,7 @@ class DafnyJSONVisitor(dafnyVisitor):
         if not sequence_ctx or not sequence_ctx.statement():
             # one path, no updates (yet)
             return [{
-                "guard": "true",
+                "guards": ["true"],
                 "updates": []
             }]
 
@@ -246,9 +258,7 @@ class DafnyJSONVisitor(dafnyVisitor):
         for i, path_data in enumerate(raw_paths):
             guard_list = path_data["guards"]
             final_state = path_data["state"]
-            
-            # construct local guard string
-            guard_str = " && ".join(guard_list) if guard_list else "true"
+            final_guards = guard_list if guard_list else ["true"]
             
             # compare final_state with self.state (pre-loop) to find updates
             updates = []
@@ -268,7 +278,7 @@ class DafnyJSONVisitor(dafnyVisitor):
                     })
 
             results.append({
-                "guard": guard_str,
+                "guards": final_guards,
                 "updates": updates
             })
             
@@ -293,7 +303,7 @@ class DafnyJSONVisitor(dafnyVisitor):
             # effectively flattening the control flow for this path
             paths_then = self._explore_paths(
                 then_stmts + remaining, 
-                current_guards + [f"({condition})"], 
+                current_guards + [f"{condition}"], 
                 current_state.copy()
             )
 
