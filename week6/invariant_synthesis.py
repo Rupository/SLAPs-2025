@@ -226,19 +226,22 @@ def intify(coeffs:list[float]):
     
     return [int(coeff) for coeff in coeffs_sym] 
 
-def is_valid_invariant(coeffs: list[int]|list[float], preconditions, loop_conditions, loop_path, params, assume_int = True):
+def is_valid_invariant(coeffs: list[int]|list[float], preconditions, loop_conditions, loop_path, vars_sym, vars_init, params, assume_int = True):
     var_data = loop_path.get('updates')
     path_guards = loop_path.get('guard')
 
+    degree = int()
     namespace = dict()
     if assume_int:
         params_dict = {param.get('name') : Int(param.get('name')) for param in params}
         vars_dict = {var.get('name') : Int(var.get('name')) for var in var_data}
+        
         namespace.update(params_dict)
         namespace.update(vars_dict)
     else:
         params_dict = {param.get('name') : Real(param.get('name')) for param in params}
         vars_dict = {var.get('name') : Real(var.get('name')) for var in var_data}
+
         namespace.update(params_dict)
         namespace.update(vars_dict)
 
@@ -260,10 +263,33 @@ def is_valid_invariant(coeffs: list[int]|list[float], preconditions, loop_condit
     sol = Solver()
     sol.add(constraints)
 
+    degree = len(vars_dict)
+    b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
+                   key=lambda m: (total_degree(m), str(m)))
+    
+    apply_basis = lambdify(vars_sym, b_v_sym, 'numpy')
+    b_v_init = apply_basis(*vars_init)
+
+    b_v_z3 = []
+    for monom in b_v_sym:
+        term = 1
+        powers = monom.as_powers_dict()
+        for var_sym, exponent in powers.items():
+            var_z3 = namespace[str(var_sym)]
+            term = term * (var_z3 ** exponent)
+        b_v_z3.append(term)
+    
+    for param in params_dict.items():
+        b_v_init.append(param)
+        b_v_z3.append(param)
+
+    c = np.array(coeffs)
+
+    inv = c.T @ b_v_z3 <= 0
+    # to AI agent, what do i do next?
 
 
-
-def analyze_invariants(found_floats:list[list[float]], vars_sym, vars_init, vars_trans, vars_z3, params, degree, assume_int = True):
+'''def analyze_invariants(found_floats:list[list[float]], vars_sym, vars_init, vars_trans, vars_z3, params, degree, assume_int = True):
     validated = []
     for inv in found_floats:
         if assume_int:
@@ -274,7 +300,7 @@ def analyze_invariants(found_floats:list[list[float]], vars_sym, vars_init, vars
     
     for inv in validated:
         # 
-        pass
+        pass'''
 
 
 def solve(norm_constraint, 
