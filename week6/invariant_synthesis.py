@@ -2,13 +2,13 @@
 # but this effectively does the same thing
 import os
 
-from z3 import Solver, Real, sat
-from sympy import Symbol, parse_expr, itermonomials, lambdify, total_degree, Poly, sympify, expand, Eq
+from z3 import Solver, Int, Real, sat, unsat
+from sympy import Symbol, parse_expr, itermonomials, lambdify, total_degree, Poly, sympify, expand, Eq, nsimplify, gcd
 import time
 from itertools import combinations
 import numpy as np
 from week5 import parser
-import json
+from functools import reduce
 
 def load_data(filename:str, method_id = 0):
     parsed_data = parser.parse_file(filename)
@@ -23,6 +23,7 @@ def parse_vars(loop_path):
     vars_sym = []
     vars_init = []
     vars_trans = []
+    vars_z3 = []
     var_data = loop_path.get('updates')
 
     for var in var_data:
@@ -34,8 +35,11 @@ def parse_vars(loop_path):
 
         var_trans = parse_expr(var.get('trans'))
         vars_trans.append(var_trans)
+
+        var_z3 = Real(var.get('name'))
+        vars_z3.append(var_z3)
     
-    return vars_sym, vars_init, vars_trans
+    return vars_sym, vars_init, vars_trans, vars_z3
 
 def lhs_leq_zero_form(inequalities, assume_int=True):
     parsed_ineqs = []
@@ -110,7 +114,8 @@ def constraints_and_setup(
                     preconditions,
                     loop_conditions,
                     path_guards,
-                    degree
+                    degree,
+                    assume_int = True
                     ):
     
     b_v = sorted(list(itermonomials(vars_sym, degree)), 
@@ -151,7 +156,7 @@ def constraints_and_setup(
     lhs = Poly(lhs, params_sym)
 
     precon_vec = [-1]
-    precon_vec.extend(lhs_leq_zero_form(preconditions))
+    precon_vec.extend(lhs_leq_zero_form(preconditions, assume_int))
     λp = np.array([Symbol(f'λp{i}') for i in range(len(preconditions)+1)])
     rhs = λp.T @ precon_vec
     rhs = expand(rhs)
@@ -169,8 +174,8 @@ def constraints_and_setup(
     λc = Real('λc')
     λt = Real('λt')
     
-    loop_conditions = lhs_leq_zero_form(loop_conditions)
-    path_guards = lhs_leq_zero_form(path_guards)
+    loop_conditions = lhs_leq_zero_form(loop_conditions, assume_int)
+    path_guards = lhs_leq_zero_form(path_guards, assume_int)
 
     loop_cond_vecs = np.array([write_expression_as_basis_vector(expr, vars_sym, b_v) for expr in loop_conditions])
     path_guard_vecs = np.array([write_expression_as_basis_vector(expr, vars_sym, b_v) for expr in path_guards])
@@ -201,6 +206,77 @@ def constraints_and_setup(
 
     return norm_constraint, precondition_constraint, farkas_constraints, lambda_constraints, c, λt
 
+def pythonise_invariant(coeffs):
+    pythonised_coeffs = []
+    for a in coeffs:
+        a = a.as_decimal(10)
+        a = a.replace('?', '')
+        a = float(a)
+        pythonised_coeffs.append(a)
+        
+    return pythonised_coeffs
+
+def intify(coeffs:list[float]):
+    coeffs_sym = [nsimplify(coeff, tolerance=1e-10) for coeff in coeffs]
+    gcd_all = reduce(gcd, coeffs_sym)
+
+    while gcd_all != 1:
+        coeffs_sym = [coeff/gcd_all for coeff in coeffs_sym]
+        gcd_all = reduce(gcd, coeffs_sym)
+    
+    return [int(coeff) for coeff in coeffs_sym] 
+
+def is_valid_invariant(coeffs: list[int]|list[float], preconditions, loop_conditions, loop_path, params, assume_int = True):
+    var_data = loop_path.get('updates')
+    path_guards = loop_path.get('guard')
+
+    namespace = dict()
+    if assume_int:
+        params_dict = {param.get('name') : Int(param.get('name')) for param in params}
+        vars_dict = {var.get('name') : Int(var.get('name')) for var in var_data}
+        namespace.update(params_dict)
+        namespace.update(vars_dict)
+    else:
+        params_dict = {param.get('name') : Real(param.get('name')) for param in params}
+        vars_dict = {var.get('name') : Real(var.get('name')) for var in var_data}
+        namespace.update(params_dict)
+        namespace.update(vars_dict)
+
+    namespace['__buitins__'] = None
+
+    constraints = []
+    for precondition in preconditions:
+        precondition = eval(precondition, namespace)
+        constraints.append(precondition)
+    
+    for loop_condition in loop_conditions:
+        loop_condition = eval(loop_condition, namespace)
+        constraints.append(loop_condition)
+    
+    for path_guard in path_guards:
+        path_guard = eval(path_guard, namespace)
+        constraints.append(path_guard)
+    
+    sol = Solver()
+    sol.add(constraints)
+
+
+
+
+def analyze_invariants(found_floats:list[list[float]], vars_sym, vars_init, vars_trans, vars_z3, params, degree, assume_int = True):
+    validated = []
+    for inv in found_floats:
+        if assume_int:
+            inv = intify(inv)
+        
+        if is_valid_invariant(inv ):
+            validated.append(inv)
+    
+    for inv in validated:
+        # 
+        pass
+
+
 def solve(norm_constraint, 
           precondition_constraint, 
           farkas_constraints, 
@@ -224,7 +300,8 @@ def solve(norm_constraint,
 
     sol.push()
 
-    found = set()
+    found_strs = set()
+    found_floats = []
     for choice_count in range(1, k+1):
         for active_coeffs in combinations(coeff_indices, choice_count):
 
@@ -241,12 +318,13 @@ def solve(norm_constraint,
                     m = sol.model()
                     c_s = np.array([m[coeff] for coeff in c])
 
-                    if str(c_s) not in found:
+                    if str(c_s) not in found_strs:
                         print("Found Solution:", c_s)
-                        found.add(str(c_s))
+                        found_strs.add(str(c_s))
+                        found_floats.append(pythonise_invariant(c_s))
                     
                     λt_s = m[λt]
-                    sol.add(λt <= λt_s - epsilon)
+                    sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
                     sol.add(c_s.T @ c <= threshold)
 
                 curr = time.time()
@@ -254,15 +332,16 @@ def solve(norm_constraint,
             sol.pop()
 
     sol.pop()
-    #return found
 
-def process_all(params, preconditions, loops, degree):
+    return found_floats
+
+def process_all(params, preconditions, loops, degree, assume_int = True):
     for loop in loops:
         loop_conditions = loop.get("conditions")
         paths = loop.get('paths')
         for loop_path in paths:
             path_guards = loop_path.get('guards')
-            vars_sym, vars_init, vars_trans = parse_vars(loop_path)
+            vars_sym, vars_init, vars_trans, _ = parse_vars(loop_path)
             path_setup = constraints_and_setup(vars_sym, 
                                              vars_init, 
                                              vars_trans, 
@@ -270,7 +349,8 @@ def process_all(params, preconditions, loops, degree):
                                              preconditions,
                                              loop_conditions,
                                              path_guards,
-                                             degree)
+                                             degree,
+                                             assume_int)
             solve(*path_setup)
         
 if __name__ == "__main__":
