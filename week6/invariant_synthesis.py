@@ -1,8 +1,7 @@
 # i'm not exactly following the spec for this week in terms of functions.
 # but this effectively does the same thing
 import os
-
-from z3 import Solver, Int, Real, sat, unsat, Not, And, Implies
+from z3 import Solver, Int, Real, sat, unsat, Not
 from sympy import Symbol, parse_expr, itermonomials, lambdify, total_degree, Poly, sympify, expand, Eq, nsimplify, gcd
 import time
 from itertools import combinations
@@ -10,6 +9,18 @@ import numpy as np
 from week5 import parser
 from functools import reduce
 from ast import literal_eval
+from sympy.printing.str import StrPrinter
+
+# [AI Disclosure - Printing Assist]
+class DafnyPrinter(StrPrinter):
+    def _print_Pow(self, expr):
+        if expr.exp.is_integer and expr.exp > 0:
+            return "*".join([self.parenthesize(expr.base, 40)] * int(expr.exp))
+        return super()._print_Pow(expr) # pyright: ignore[reportAttributeAccessIssue] 
+
+# [AI Disclosure - Printing Assist]
+def to_dafny(expr):
+    return DafnyPrinter().doprint(expr)
 
 def load_data(filename:str, method_id = 0):
     parsed_data = parser.parse_file(filename)
@@ -312,7 +323,6 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     inv_next = c.T @ b_v_z3_trans <= 0
 
     sol = Solver()
-    sol.set('timeout', 1000)
     sol.add(precondition_constraints)
 
     # given the precondition, 
@@ -337,14 +347,64 @@ def is_valid_invariant(coeffs: list[int]|list[float],
 
     return True
 
-def prune(coeff_list:list[list[float]|list[int]], assume_int = True):
-    coeff_list =  list(coeff_list)
-    k = len(coeff_list[0])
+def get_z3_basis(params, loop_path, vars_sym, assume_int = True):
 
+    var_data = loop_path.get('updates')
+
+    degree = int()
+    namespace = dict()
     if assume_int:
-        b = np.array([1 if i == 0 else Int(f"b{i}") for i in range(k)])
+        params_dict = {param.get('name') : Int(param.get('name')) for param in params}
+        vars_dict = {var.get('name') : Int(var.get('name')) for var in var_data}
+        
+        namespace.update(params_dict)
+        namespace.update(vars_dict)
     else:
-        b = np.array([1 if i == 0 else Real(f"b{i}") for i in range(k)])
+        params_dict = {param.get('name') : Real(param.get('name')) for param in params}
+        vars_dict = {var.get('name') : Real(var.get('name')) for var in var_data}
+
+        namespace.update(params_dict)
+        namespace.update(vars_dict)
+
+    namespace['__builtins__'] = None
+    degree = len(vars_dict)
+
+    b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
+                   key=lambda m: (total_degree(m), str(m)))
+    
+    b_v_z3 = []
+    for mono in b_v_sym:
+        term = 1
+        if not mono.is_constant():
+            powers = mono.as_powers_dict()
+            for var_sym, exponent in powers.items():
+                var_z3 = namespace[str(var_sym)]
+                term = term * (var_z3 ** exponent)
+        b_v_z3.append(term)
+    
+    if assume_int:
+        param_list = [Int(param.get('name')) for param in params]
+    else:
+        param_list = [Real(param.get('name')) for param in params]
+
+    for param in param_list:
+        b_v_z3.append(param)
+    
+    return np.array(b_v_z3)
+
+def get_sympy_basis(params, vars_sym):
+    degree = len(vars_sym)
+    b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
+                   key=lambda m: (total_degree(m), str(m)))
+    
+    param_list = [Symbol(param.get('name')) for param in params]
+    for param in param_list:
+        b_v_sym.append(param)
+
+    return b_v_sym
+    
+def prune(coeff_list:list[list[float]|list[int]], b):
+    coeff_list =  list(coeff_list)
 
     invariants = [b.T @ coeff <= 0 for coeff in coeff_list]
 
@@ -377,6 +437,16 @@ def prune(coeff_list:list[list[float]|list[int]], assume_int = True):
     
     return coeff_list
 
+def get_str_print_invariants(invariant_coeffs, b):
+    invariant_strings = []
+    for coeffs in invariant_coeffs:
+        c = np.array(coeffs)
+        inv = nsimplify(c.T @ b) <= 0 # pyright: ignore[reportOperatorIssue]
+        inv = to_dafny(inv)
+        print(f"\t\t\t>>>> [{inv}]")
+        invariant_strings.append(str(inv))
+    return invariant_strings
+
 def analyze_invariants(found_floats:list[list[float]], 
                        preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
@@ -406,14 +476,19 @@ def analyze_invariants(found_floats:list[list[float]],
             pass
 
     validated_list = [literal_eval(inv_str) for inv_str in validated]
-    print("Validated", len(validated_list), "Invariants")
-    print()
+    print("\t\t>>> Validated Invariants.")
 
-    final_invariants = prune(validated_list)
+    b_v_z3 = get_z3_basis(params, loop_path, vars_sym, assume_int = True)
+    b_v_sym = get_sympy_basis(params, vars_sym)
 
-    print("Pruned", len(validated_list) - len(final_invariants), "Invariants")
+    final_invariants = prune(validated_list, b_v_z3)
+
+
+    print(f"\t\t>>> Pruned {len(found_floats) - len(final_invariants)} Invariants.")
     print()
-    print(final_invariants)
+    print('\t\t>>> Invariants:')
+    get_str_print_invariants(final_invariants, b_v_sym)
+
     return final_invariants
 
 def solve(norm_constraint, 
@@ -442,7 +517,7 @@ def solve(norm_constraint,
     found_strs = set()
     found_floats = []
 
-    print("Generating Invariants ...")
+    print("\t\t>>> Generating Invariants...")
     for choice_count in range(1, k+1):
         for active_coeffs in combinations(coeff_indices, choice_count):
 
@@ -460,7 +535,7 @@ def solve(norm_constraint,
                     c_s = np.array([m[coeff] for coeff in c])
 
                     if str(c_s) not in found_strs:
-                        #print("Found Solution:", c_s)
+                        print("\t\t\t>>>> Found Coefficients:", c_s)
                         found_strs.add(str(c_s))
                         found_floats.append(pythonise_invariant(c_s))
                     
@@ -474,19 +549,20 @@ def solve(norm_constraint,
 
     sol.pop()
 
-    print("Found", len(found_floats), "Invariants")
+    print(f"\t\t>>> Found {len(found_floats)} Invariants.")
     print()
     return found_floats
 
 def process_all(params, preconditions, loops, degree, assume_int = True):
+    start_time = time.time()
     loop_count = 1
     for loop in loops:
-        print("Analyzing Loop", 1)
+        print(f"> Analyzing Loop {loop_count}...")
         loop_conditions = loop.get("conditions")
         paths = loop.get('paths')
         path_count = 1
         for loop_path in paths:
-            print("Analyzing Path", 1)
+            print(f"\t>> Analyzing Path {path_count}...")
             print()
             path_guards = loop_path.get('guards')
             vars_sym, vars_init, vars_trans = parse_vars(loop_path)
@@ -505,6 +581,14 @@ def process_all(params, preconditions, loops, degree, assume_int = True):
 
             analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
                                vars_sym, vars_init, vars_trans, params, assume_int)
+            path_count += 1
+            print()
+        
+        loop_count += 1
+        print()
+    
+    end_time = time.time()
+    print(f"> Finished in {format(end_time - start_time, '.2f')}s")
         
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))

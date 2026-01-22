@@ -6,9 +6,8 @@ method Sum(n: int) returns (s: int)
     s := 0;
     
     while (i < n)
-        invariant 0 <= i <= n
-        invariant s == i * (i - 1) / 2
-        decreases n - i
+        invariant i - n  <= 0
+        invariant -i*i + i + 2*s == 0
     {
         s := s + i;
         i := i + 1;
