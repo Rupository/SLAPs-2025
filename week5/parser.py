@@ -245,7 +245,7 @@ class DafnyJSONVisitor(dafnyVisitor):
         if not sequence_ctx or not sequence_ctx.statement():
             # one path, no updates (yet)
             return [{
-                "guards": ["true"],
+                "guards": [],
                 "updates": []
             }]
 
@@ -258,7 +258,7 @@ class DafnyJSONVisitor(dafnyVisitor):
         for i, path_data in enumerate(raw_paths):
             guard_list = path_data["guards"]
             final_state = path_data["state"]
-            final_guards = guard_list if guard_list else ["true"]
+            final_guards = guard_list if guard_list else []
             
             # compare final_state with self.state (pre-loop) to find updates
             updates = []

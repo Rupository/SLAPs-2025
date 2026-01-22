@@ -2,7 +2,7 @@
 # but this effectively does the same thing
 import os
 
-from z3 import Solver, Int, Real, sat, unsat
+from z3 import Solver, Int, Real, sat, unsat, Not
 from sympy import Symbol, parse_expr, itermonomials, lambdify, total_degree, Poly, sympify, expand, Eq, nsimplify, gcd
 import time
 from itertools import combinations
@@ -23,7 +23,6 @@ def parse_vars(loop_path):
     vars_sym = []
     vars_init = []
     vars_trans = []
-    vars_z3 = []
     var_data = loop_path.get('updates')
 
     for var in var_data:
@@ -35,11 +34,8 @@ def parse_vars(loop_path):
 
         var_trans = parse_expr(var.get('trans'))
         vars_trans.append(var_trans)
-
-        var_z3 = Real(var.get('name'))
-        vars_z3.append(var_z3)
     
-    return vars_sym, vars_init, vars_trans, vars_z3
+    return vars_sym, vars_init, vars_trans
 
 def lhs_leq_zero_form(inequalities, assume_int=True):
     parsed_ineqs = []
@@ -117,6 +113,10 @@ def constraints_and_setup(
                     degree,
                     assume_int = True
                     ):
+
+    vars_sym = list(vars_sym)
+    vars_init = list(vars_init)
+    vars_trans = list(vars_trans)
     
     b_v = sorted(list(itermonomials(vars_sym, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
@@ -224,11 +224,19 @@ def intify(coeffs:list[float]):
         coeffs_sym = [coeff/gcd_all for coeff in coeffs_sym]
         gcd_all = reduce(gcd, coeffs_sym)
     
-    return [int(coeff) for coeff in coeffs_sym] 
+    return [int(coeff) for coeff in coeffs_sym]
 
-def is_valid_invariant(coeffs: list[int]|list[float], preconditions, loop_conditions, loop_path, vars_sym, vars_init, params, assume_int = True):
+def is_valid_invariant(coeffs: list[int]|list[float], 
+                       preconditions, loop_conditions, 
+                       loop_path, vars_sym, vars_init, 
+                       vars_trans, params, assume_int = True):
+    
+    vars_sym = list(vars_sym)
+    vars_init = list(vars_init)
+    vars_trans = list(vars_trans)
+    
     var_data = loop_path.get('updates')
-    path_guards = loop_path.get('guard')
+    path_guards = loop_path.get('guards')
 
     degree = int()
     namespace = dict()
@@ -247,21 +255,19 @@ def is_valid_invariant(coeffs: list[int]|list[float], preconditions, loop_condit
 
     namespace['__buitins__'] = None
 
-    constraints = []
+    precondition_constraints = []
     for precondition in preconditions:
         precondition = eval(precondition, namespace)
-        constraints.append(precondition)
+        precondition_constraints.append(precondition)
     
+    loop_constraints = []
     for loop_condition in loop_conditions:
         loop_condition = eval(loop_condition, namespace)
-        constraints.append(loop_condition)
+        loop_constraints.append(loop_condition)
     
     for path_guard in path_guards:
         path_guard = eval(path_guard, namespace)
-        constraints.append(path_guard)
-    
-    sol = Solver()
-    sol.add(constraints)
+        loop_constraints.append(path_guard)
 
     degree = len(vars_dict)
     b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
@@ -270,37 +276,84 @@ def is_valid_invariant(coeffs: list[int]|list[float], preconditions, loop_condit
     apply_basis = lambdify(vars_sym, b_v_sym, 'numpy')
     b_v_init = apply_basis(*vars_init)
 
+    transition_map = dict(zip([str(var_sym) for var_sym in vars_sym],
+                              [str(var_trans) for var_trans in vars_trans]))
+    
     b_v_z3 = []
-    for monom in b_v_sym:
+    b_v_z3_trans = []
+    for mono in b_v_sym:
         term = 1
-        powers = monom.as_powers_dict()
+        term_trans = 1
+        powers = mono.as_powers_dict()
         for var_sym, exponent in powers.items():
             var_z3 = namespace[str(var_sym)]
+            var_trans_z3 = namespace[transition_map[str(var_sym)]]
+
             term = term * (var_z3 ** exponent)
+            term_trans = term_trans * (var_trans_z3 ** exponent)
         b_v_z3.append(term)
+        b_v_z3_trans.append(term_trans)
     
     for param in params_dict.items():
         b_v_init.append(param)
         b_v_z3.append(param)
+        b_v_z3_trans.append(param)
 
     c = np.array(coeffs)
 
-    inv = c.T @ b_v_z3 <= 0
-    # to AI agent, what do i do next?
+    inv_init = c.T @ b_v_init <= 0
+    inv_curr = c.T @ b_v_z3 <= 0
+    inv_next = c.T @ b_v_z3_trans <= 0
 
+    
+    sol = Solver()
+    sol.set('timeout', 1000)
+    sol.add(precondition_constraints)
 
-'''def analyze_invariants(found_floats:list[list[float]], vars_sym, vars_init, vars_trans, vars_z3, params, degree, assume_int = True):
-    validated = []
+    # given the precondition, 
+    # if there exists a setup where the negation of the invariant holds,
+    # then the invariant is false
+    sol.push()
+    sol.add(Not(inv_init))
+    if sol.check() == sat:
+        return False
+    sol.pop()
+
+    # given the precondition, loop condition + ITE guards, and the previous invariant 
+    # if there exists a setup where the negation of the next invariant holds,
+    # then the invariant is false
+    sol.add(loop_constraints)
+    sol.add(inv_curr)
+    sol.add(Not(inv_next))
+    if sol.check() == sat:
+        return False
+    sol.pop()
+
+    return True
+
+def analyze_invariants(found_floats:list[list[float]], 
+                       preconditions, loop_conditions, 
+                       loop_path, vars_sym, vars_init, 
+                       vars_trans, assume_int = True):
+    
+    validated = set()
+
     for inv in found_floats:
         if assume_int:
             inv = intify(inv)
         
-        if is_valid_invariant(inv ):
-            validated.append(inv)
+        flip = [-coeff for coeff in inv]
+        if is_valid_invariant(inv, preconditions, loop_conditions, 
+                       loop_path, vars_sym, vars_init, 
+                       vars_trans, params, assume_int):
+            validated.add(inv)
+        
+        if is_valid_invariant(flip, preconditions, loop_conditions, 
+                       loop_path, vars_sym, vars_init, 
+                       vars_trans, params, assume_int):
+            validated.add(flip)
     
-    for inv in validated:
-        # 
-        pass'''
+    print(validated)
 
 
 def solve(norm_constraint, 
@@ -367,7 +420,7 @@ def process_all(params, preconditions, loops, degree, assume_int = True):
         paths = loop.get('paths')
         for loop_path in paths:
             path_guards = loop_path.get('guards')
-            vars_sym, vars_init, vars_trans, _ = parse_vars(loop_path)
+            vars_sym, vars_init, vars_trans = parse_vars(loop_path)
             path_setup = constraints_and_setup(vars_sym, 
                                              vars_init, 
                                              vars_trans, 
@@ -377,7 +430,10 @@ def process_all(params, preconditions, loops, degree, assume_int = True):
                                              path_guards,
                                              degree,
                                              assume_int)
-            solve(*path_setup)
+            found_floats = solve(*path_setup)
+
+            analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
+                               vars_sym, vars_init, vars_trans, assume_int)
         
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
