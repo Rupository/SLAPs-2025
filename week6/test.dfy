@@ -7,7 +7,7 @@ method Sum(n: int) returns (s: int)
     
     while (i < n)
         invariant i - n  <= 0
-        invariant -i*i + i + 2*s == 0
+        invariant i*i + -i + -2*s == 0
     {
         s := s + i;
         i := i + 1;

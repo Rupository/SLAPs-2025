@@ -422,8 +422,8 @@ def prune(coeff_list:list[list[float]|list[int]], b):
         sol.push()
 
         # we want to check if, for all bases, others ==> inv. is valid . others ==> inv == not others or inv
-        # in other words, this is a check to say- the stamement "there exists some basis where other =/=> inv (others and not inv)
-        # is unsat.
+        # in other words, this is a check to say- the stamement 
+        # "there exists some basis where other =/=> inv (others and not inv) is unsat.
          
         sol.add(others)
         sol.add(Not(inv))
@@ -438,13 +438,24 @@ def prune(coeff_list:list[list[float]|list[int]], b):
     return coeff_list
 
 def get_str_print_invariants(invariant_coeffs, b):
-    invariant_strings = []
+    invariant_strings = set()
     for coeffs in invariant_coeffs:
+        flips = [-coeff for coeff in coeffs]
+
         c = np.array(coeffs)
         inv = nsimplify(c.T @ b) <= 0 # pyright: ignore[reportOperatorIssue]
         inv = to_dafny(inv)
+
+        if flips in invariant_coeffs:
+            eq = Eq(nsimplify(c.T @ b), 0)
+            inv = to_dafny(eq.lhs) + " == " + to_dafny(eq.rhs)
+            invariant_coeffs.remove(flips)
+        
+        invariant_strings.add(inv)
+    
+    for inv in invariant_strings:
         print(f"\t\t\t>>>> [{inv}]")
-        invariant_strings.append(str(inv))
+
     return invariant_strings
 
 def analyze_invariants(found_floats:list[list[float]], 
@@ -484,7 +495,7 @@ def analyze_invariants(found_floats:list[list[float]],
     final_invariants = prune(validated_list, b_v_z3)
 
 
-    print(f"\t\t>>> Pruned {len(found_floats) - len(final_invariants)} Invariants.")
+    print(f"\t\t>>> Pruned Invariants.")
     print()
     print('\t\t>>> Invariants:')
     get_str_print_invariants(final_invariants, b_v_sym)
