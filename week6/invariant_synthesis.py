@@ -442,7 +442,6 @@ def prune(coeff_list:list[list[float]|list[int]], b):
     i = 0
     while i < len(invariants):
         inv = invariants[i]
-
         others = invariants[:i] + invariants[i+1:]
 
         if not others:
@@ -548,7 +547,7 @@ def solve(norm_constraint,
     sol.add(farkas_constraints)
     sol.add(lambda_constraints)
 
-    sol.set('timeout', 200)
+    sol.set('timeout', 500)
     # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
     epsilon = 0.05
@@ -571,7 +570,7 @@ def solve(norm_constraint,
             sol.add(active_nonzero_constraint)
             
             curr = time.time()
-            end = curr + 0.2
+            end = curr + 0.5
 
             while curr < end:
                     
@@ -584,14 +583,14 @@ def solve(norm_constraint,
                         found_strs.add(str(c_s))
                         found_floats.append(pythonise_invariant(c_s))
 
-                    λt_s = m[λt]
-                    sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
+                    #λt_s = m[λt]
+                    #sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
                     # move away from trivial solution
 
-                    l1_norm_s = Sum([Abs(coeff) for coeff in c_s])
-                    l1_norm = Sum([Abs(coeff) for coeff in c])
+                    #l1_norm_s = Sum([Abs(coeff) for coeff in c_s])
+                    #l1_norm = Sum([Abs(coeff) for coeff in c])
 
-                    sol.add(l1_norm <= l1_norm_s - epsilon)
+                    #sol.add(l1_norm <= l1_norm_s - epsilon)
                     # force the solver to keep reducing its budget in the l1 norm, allowing it to hone in
                     # on better and better solutions
 
