@@ -1,8 +1,8 @@
 # i'm not exactly following the spec for this week in terms of functions.
 # but this effectively does the same thing
 import os
-from z3 import Solver, Int, Real, sat, unsat, Not
-from sympy import Symbol, parse_expr, itermonomials, lambdify, total_degree, Poly, sympify, expand, Eq, nsimplify, gcd
+from z3 import Solver, Int, Real, sat, unsat, Not, Sum, Abs
+from sympy import Symbol, parse_expr, itermonomials, lambdify, total_degree, Poly, sympify, expand, Eq, nsimplify, gcd, sqrt
 import time
 from itertools import combinations
 import numpy as np
@@ -178,7 +178,7 @@ def constraints_and_setup(
     c = np.array([Real(f'a{i}') for i in coeff_indices])
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
 
-    norm_constraint = c.T @ c == 1
+    norm_constraint = Sum([Abs(coeff) for coeff in c]) == 1
     precondition_constraint = get_precondition_constraints(equalities, c, λp)
 
     lhs = M.T @ c
@@ -229,14 +229,25 @@ def pythonise_invariant(coeffs):
     return pythonised_coeffs
 
 def intify(coeffs:list[float]):
+
     coeffs_sym = [nsimplify(coeff, tolerance=1e-10) for coeff in coeffs]
     gcd_all = reduce(gcd, coeffs_sym)
 
-    while gcd_all != 1:
+    while not gcd_all.equals(1):
         coeffs_sym = [coeff/gcd_all for coeff in coeffs_sym]
         gcd_all = reduce(gcd, coeffs_sym)
     
-    return [int(coeff) for coeff in coeffs_sym]
+    coeffs_int = [int(coeff) for coeff in coeffs_sym]
+    gcd_all = reduce(gcd, coeffs_int)
+
+    while not gcd_all.equals(1):
+        if coeffs_int == [0]*len(coeffs_int):
+            break
+        coeffs_int = [coeff/gcd_all for coeff in coeffs_int]
+        gcd_all = reduce(gcd, coeffs_int)
+
+    return [int(coeff) for coeff in coeffs_int]
+
 
 def is_valid_invariant(coeffs: list[int]|list[float], 
                        preconditions, loop_conditions, 
@@ -323,6 +334,7 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     inv_next = c.T @ b_v_z3_trans <= 0
 
     sol = Solver()
+    sol.set('timeout', 1000)
     sol.add(precondition_constraints)
 
     # given the precondition, 
@@ -408,7 +420,10 @@ def prune(coeff_list:list[list[float]|list[int]], b):
 
     invariants = [b.T @ coeff <= 0 for coeff in coeff_list]
 
+    
     sol = Solver()
+    sol.set('timeout', 10000)
+
     i = 0
     while i < len(invariants):
         inv = invariants[i]
@@ -518,10 +533,11 @@ def solve(norm_constraint,
     sol.add(farkas_constraints)
     sol.add(lambda_constraints)
 
-    sol.set('timeout', 100)
+    sol.set('timeout', 20)
+    # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
     epsilon = 0.01
-    threshold = 0.866
+    threshold = 0.5
 
     sol.push()
 
@@ -532,13 +548,13 @@ def solve(norm_constraint,
     for choice_count in range(1, k+1):
         for active_coeffs in combinations(coeff_indices, choice_count):
 
-            #print("Active:", [c[i] for i in active_coeffs])
-            inactive_coeffs = [c[i] == 0 for i in coeff_indices if i not in active_coeffs]
+            print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
+            inactive_constraint = [c[i] == 0 for i in coeff_indices if i not in active_coeffs]
             sol.push()
-            sol.add(inactive_coeffs)
-
+            sol.add(inactive_constraint)
+            
             curr = time.time()
-            end = curr + 1
+            end = curr + 0.2
 
             while curr < end:
                 if sol.check() == sat:
@@ -551,8 +567,13 @@ def solve(norm_constraint,
                         found_floats.append(pythonise_invariant(c_s))
                     
                     λt_s = m[λt]
+                    #λt_s = pythonise_invariant([λt_s])[0]
                     sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
+
+                    #c_s = np.array(pythonise_invariant(c_s))
                     sol.add(c_s.T @ c <= threshold)
+                    # replaced thresholding with stricter time limits, allows it to possibly approach a 
+                    # trivial solution for a small time but search the space properly when it's needed
 
                 curr = time.time()
 
