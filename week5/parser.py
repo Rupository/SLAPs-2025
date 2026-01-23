@@ -250,32 +250,45 @@ class DafnyJSONVisitor(dafnyVisitor):
             }]
 
         stmts = sequence_ctx.statement()
-        # start exploration with raw 
-        raw_paths = self._explore_paths(stmts, [], self.state.copy())
+        
+        # [AI DISCLOSURE] - I didn't wanna do busywork okay
+        # initialize execution log, catches variable updates in order of update decleration down a path
+        raw_paths = self._explore_paths(stmts, [], self.state.copy(), [])
 
         # convert raw states back into "updates" list (init vs trans)
         results = []
         for i, path_data in enumerate(raw_paths):
             guard_list = path_data["guards"]
             final_state = path_data["state"]
+            update_log = path_data["update_log"]
             final_guards = guard_list if guard_list else []
             
-            # compare final_state with self.state (pre-loop) to find updates
-            updates = []
-            
-            # for all variables in the final_state
+            # identify which variables actually changed
+            changed_vars = {}
             for var_name, final_val in final_state.items():
                 initial_val = self.state.get(var_name, None)
-                
-                # if the value changed OR it's a new variable declared inside loop
                 if final_val != initial_val:
-                    # update
-                    updates.append({
+                    changed_vars[var_name] = {
                         "name": var_name,
                         "type": "int",
                         "init": initial_val,
                         "trans": final_val
-                    })
+                    }
+            
+            # construct the updates list using the ORDER from update_log
+            updates = []
+            processed = set()
+            
+            # 1. add variables in the order they were encountered
+            for var_name in update_log:
+                if var_name in changed_vars and var_name not in processed:
+                    updates.append(changed_vars[var_name])
+                    processed.add(var_name)
+            
+            # 2. add any remaining changed variables (implicit changes or missed in log)
+            for var_name, update_obj in changed_vars.items():
+                if var_name not in processed:
+                    updates.append(update_obj)
 
             results.append({
                 "guards": final_guards,
@@ -284,10 +297,10 @@ class DafnyJSONVisitor(dafnyVisitor):
             
         return results
 
-    def _explore_paths(self, stmts, current_guards, current_state):
+    def _explore_paths(self, stmts, current_guards, current_state, current_log):
         # recursive function to traverse statements and fork on ITE statements
         if not stmts:
-            return [{"guards": current_guards, "state": current_state}]
+            return [{"guards": current_guards, "state": current_state, "update_log": current_log}]
 
         stmt = stmts[0]
         remaining = stmts[1:]
@@ -304,7 +317,8 @@ class DafnyJSONVisitor(dafnyVisitor):
             paths_then = self._explore_paths(
                 then_stmts + remaining, 
                 current_guards + [f"{condition}"], 
-                current_state.copy()
+                current_state.copy(),
+                current_log.copy()
             )
 
             # ELSE
@@ -316,34 +330,37 @@ class DafnyJSONVisitor(dafnyVisitor):
             paths_else = self._explore_paths(
                 else_stmts + remaining,
                 current_guards + [f"!({condition})"],
-                current_state.copy()
+                current_state.copy(),
+                current_log.copy()
             )
 
             return paths_then + paths_else
 
         elif stmt.assignment():
             # apply assignment to current_state
-            self._apply_assignment(stmt.assignment(), current_state)
-            return self._explore_paths(remaining, current_guards, current_state)
+            self._apply_assignment(stmt.assignment(), current_state, current_log)
+            return self._explore_paths(remaining, current_guards, current_state, current_log)
 
         elif stmt.declaration():
             # treat declaration as assignment (init inside path)
-            self._apply_declaration(stmt.declaration(), current_state)
-            return self._explore_paths(remaining, current_guards, current_state)
+            self._apply_declaration(stmt.declaration(), current_state, current_log)
+            return self._explore_paths(remaining, current_guards, current_state, current_log)
 
         else:
             # skip other stuff
-            return self._explore_paths(remaining, current_guards, current_state)
+            return self._explore_paths(remaining, current_guards, current_state, current_log)
 
-    def _apply_assignment(self, ctx: dafnyParser.AssignmentContext, state: dict):
+    def _apply_assignment(self, ctx: dafnyParser.AssignmentContext, state: dict, log: list):
         lhs_vars = [x.getText() for x in ctx.assignmentLhs()]
         rhs_raw = ctx.declAssignRhs()
         rhs_vals = [x.getText() for x in rhs_raw] if isinstance(rhs_raw, list) else [rhs_raw.getText()]
 
         for var_name, new_val in zip(lhs_vars, rhs_vals):
             state[var_name] = new_val
+            if var_name not in log:
+                log.append(var_name)
 
-    def _apply_declaration(self, ctx: dafnyParser.DeclarationContext, state: dict):
+    def _apply_declaration(self, ctx: dafnyParser.DeclarationContext, state: dict, log: list):
         lhs_ctx = ctx.declarationLhs()
         lhs_vars = [item.getText() for item in lhs_ctx.declAssignLhs()]
         
@@ -355,6 +372,8 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         for i, var_name in enumerate(lhs_vars):    
             state[var_name] = rhs_vals[i]
+            if var_name not in log:
+                log.append(var_name)
 
 def parse_file(file_path):
     input_stream = FileStream(file_path, encoding='utf-8')
@@ -368,7 +387,6 @@ def parse_file(file_path):
 def main():
     if len(sys.argv) > 1:
         data = parse_file(sys.argv[1])
-        
         print(json.dumps(data, indent=2))
     else:
         print("Usage: parser.py <your_file>.dfy")

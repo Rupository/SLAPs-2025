@@ -29,4 +29,3 @@
     ```bash
     python -m week5.parser <path_to_your_file>.dfy
     ```
-    You may use more than one file

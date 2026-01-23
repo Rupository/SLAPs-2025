@@ -1,6 +1,8 @@
 # i'm not exactly following the spec for this week in terms of functions.
 # but this effectively does the same thing
 import os
+import sys
+import argparse
 from z3 import Solver, Int, Real, sat, unsat, Not, Sum, Abs
 from sympy import Symbol, parse_expr, itermonomials, lambdify, total_degree, Poly, sympify, expand, Eq, nsimplify, gcd, sqrt
 import time
@@ -29,7 +31,6 @@ def load_data(filename:str, method_id = 0):
     preconditions = method.get('preconditions')
     loops = method.get('loops')
     return params, preconditions, loops
-
 
 def parse_vars(loop_path):
     vars_sym = []
@@ -137,13 +138,23 @@ def constraints_and_setup(
     b_v_init = apply_basis(*vars_init)
     b_v_init_sym = apply_basis(*vars_init)
     b_v_init_const = apply_basis(*vars_init)
+    
+    # important fix -> for transition matrix, updates containing previous variables (if encountered)
+    # should also store the update of previous variable.
+    # i := i+1 followed by j := j+i should be i := i+1 and j := j+i+1. BUT!
+    # j := j+i followed by i := i+1 should stay the same (no way to know i's update initially)
+    current_state = {v: v for v in set(vars_sym)}
+    for sym, trans in zip(vars_sym, vars_trans):
+        current_state[sym] = trans.subs(current_state)
+    final_updates = list(current_state.items())
 
     M = []
     for ele in b_v:
-        expr = ele.subs(list(zip(vars_sym, vars_trans)))
+        expr = ele.subs(final_updates)
         trans_vec = write_expression_as_basis_vector(expr, vars_sym, b_v)
         M.append(trans_vec)
     M = np.array(M)
+    #print(M)
 
     for param in params:
         param = param.get('name')
@@ -178,7 +189,10 @@ def constraints_and_setup(
     c = np.array([Real(f'a{i}') for i in coeff_indices])
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
 
-    norm_constraint = Sum([Abs(coeff) for coeff in c]) == 1
+    norm_constraint = Sum([Abs(coeff) for coeff in c]) <= 1
+    # switched to l1 norm. l2 was causing way too many issues with square roots and such. this is
+    # much more efficient and can be constrained far better (see solve loop)
+
     precondition_constraint = get_precondition_constraints(equalities, c, λp)
 
     lhs = M.T @ c
@@ -298,9 +312,12 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     
     apply_basis = lambdify(vars_sym, b_v_sym, 'numpy')
     b_v_init = apply_basis(*vars_init)
-
-    transition_map = dict(zip([str(var_sym) for var_sym in vars_sym],
-                              [str(var_trans) for var_trans in vars_trans]))
+    
+    current_state = {v: v for v in set(vars_sym)}
+    for sym, trans in zip(vars_sym, vars_trans):
+        current_state[sym] = trans.subs(current_state)
+        
+    transition_map = {str(sym): str(expr) for sym, expr in current_state.items()}
     
     b_v_z3 = []
     b_v_z3_trans = []
@@ -334,7 +351,6 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     inv_next = c.T @ b_v_z3_trans <= 0
 
     sol = Solver()
-    sol.set('timeout', 1000)
     sol.add(precondition_constraints)
 
     # given the precondition, 
@@ -422,7 +438,6 @@ def prune(coeff_list:list[list[float]|list[int]], b):
 
     
     sol = Solver()
-    sol.set('timeout', 10000)
 
     i = 0
     while i < len(invariants):
@@ -449,7 +464,7 @@ def prune(coeff_list:list[list[float]|list[int]], b):
             i += 1
         
         sol.pop()
-    
+
     return coeff_list
 
 def get_str_print_invariants(invariant_coeffs, b):
@@ -533,11 +548,10 @@ def solve(norm_constraint,
     sol.add(farkas_constraints)
     sol.add(lambda_constraints)
 
-    sol.set('timeout', 20)
+    sol.set('timeout', 200)
     # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
-    epsilon = 0.01
-    threshold = 0.5
+    epsilon = 0.05
 
     sol.push()
 
@@ -550,13 +564,17 @@ def solve(norm_constraint,
 
             print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
             inactive_constraint = [c[i] == 0 for i in coeff_indices if i not in active_coeffs]
+            active_nonzero_constraint = [c[i] != 0 for i in active_coeffs]
+
             sol.push()
             sol.add(inactive_constraint)
+            sol.add(active_nonzero_constraint)
             
             curr = time.time()
             end = curr + 0.2
 
             while curr < end:
+                    
                 if sol.check() == sat:
                     m = sol.model()
                     c_s = np.array([m[coeff] for coeff in c])
@@ -565,15 +583,17 @@ def solve(norm_constraint,
                         print("\t\t\t>>>> Found Coefficients:", c_s)
                         found_strs.add(str(c_s))
                         found_floats.append(pythonise_invariant(c_s))
-                    
-                    λt_s = m[λt]
-                    #λt_s = pythonise_invariant([λt_s])[0]
-                    sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
 
-                    #c_s = np.array(pythonise_invariant(c_s))
-                    sol.add(c_s.T @ c <= threshold)
-                    # replaced thresholding with stricter time limits, allows it to possibly approach a 
-                    # trivial solution for a small time but search the space properly when it's needed
+                    λt_s = m[λt]
+                    sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
+                    # move away from trivial solution
+
+                    l1_norm_s = Sum([Abs(coeff) for coeff in c_s])
+                    l1_norm = Sum([Abs(coeff) for coeff in c])
+
+                    sol.add(l1_norm <= l1_norm_s - epsilon)
+                    # force the solver to keep reducing its budget in the l1 norm, allowing it to hone in
+                    # on better and better solutions
 
                 curr = time.time()
 
@@ -622,8 +642,29 @@ def process_all(params, preconditions, loops, degree, assume_int = True):
     end_time = time.time()
     print(f"> Finished in {format(end_time - start_time, '.2f')}s")
         
+def main():
+    # [AI DISCLOSURE] Boilerplate
+    parser = argparse.ArgumentParser(description="Dafny Invariant Synthesizer")
+    parser.add_argument("file", help="Path to the .dfy file")
+    parser.add_argument("-d", "--degree", type=int, default=2, help="Polynomial degree (default: 2)")
+    parser.add_argument("-m", "--method", type=int, default=0, help="Method to analyze (default: 0th)")
+
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
+    args = parser.parse_args()
+
+    if not os.path.exists(args.file):
+        print(f"Error: File '{args.file}' not found.")
+        sys.exit(1)
+
+    try:
+        params, preconditions, loops = load_data(args.file, method_id=args.method)
+        process_all(params, preconditions, loops, degree=args.degree)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    target_file = os.path.join(current_dir, 'test.dfy')
-    params, preconditions, loops = load_data(target_file, method_id=0)
-    process_all(params, preconditions, loops, degree=2)
+    main()
