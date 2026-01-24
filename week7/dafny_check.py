@@ -7,7 +7,7 @@ from week6 import invariant_synthesis
 
 def get_file_info(filename:str, method_id = 0):
     params, preconditions, loops = invariant_synthesis.load_data(filename, method_id)
-    insertion_pts = [loop.get('inserstion_pt') for loop in loops]
+    insertion_pts = [loop.get('insertion_pt') for loop in loops]
     return params, preconditions, loops, insertion_pts
 
 def get_path_invariant_string(path_guards, invariant_strs):
