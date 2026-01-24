@@ -189,7 +189,8 @@ def constraints_and_setup(
     c = np.array([Real(f'a{i}') for i in coeff_indices])
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
 
-    norm_constraint = Sum([Abs(coeff) for coeff in c]) <= 1
+    l1_norm = Sum([Abs(coeff) for coeff in c])
+    norm_constraints = [l1_norm > 0, l1_norm <= 1]
     # switched to l1 norm. l2 was causing way too many issues with square roots and such. this is
     # much more efficient and can be constrained far better (see solve loop)
 
@@ -230,7 +231,7 @@ def constraints_and_setup(
     lambda_constraints.extend([λl[i] >= 0 for i in range(len(λl))])
     lambda_constraints.extend([λg[i] >= 0 for i in range(len(λg))])
 
-    return norm_constraint, precondition_constraint, farkas_constraints, lambda_constraints, c, λt
+    return norm_constraints, precondition_constraint, farkas_constraints, lambda_constraints, c, λt
 
 def pythonise_invariant(coeffs):
     pythonised_coeffs = []
@@ -251,16 +252,7 @@ def intify(coeffs:list[float]):
         coeffs_sym = [coeff/gcd_all for coeff in coeffs_sym]
         gcd_all = reduce(gcd, coeffs_sym)
     
-    coeffs_int = [int(coeff) for coeff in coeffs_sym]
-    gcd_all = reduce(gcd, coeffs_int)
-
-    while not gcd_all.equals(1):
-        if coeffs_int == [0]*len(coeffs_int):
-            break
-        coeffs_int = [coeff/gcd_all for coeff in coeffs_int]
-        gcd_all = reduce(gcd, coeffs_int)
-
-    return [int(coeff) for coeff in coeffs_int]
+    return [int(coeff) for coeff in coeffs_sym]
 
 
 def is_valid_invariant(coeffs: list[int]|list[float], 
@@ -431,11 +423,19 @@ def get_sympy_basis(params, vars_sym):
 
     return b_v_sym
     
-def prune(coeff_list:list[list[float]|list[int]], b):
+def prune(coeff_list:list[list[float]|list[int]], equality_type_list, b):
     coeff_list =  list(coeff_list)
+    print(coeff_list)
 
-    invariants = [b.T @ coeff <= 0 for coeff in coeff_list]
 
+    invariants = []
+    for i in range(len(coeff_list)):
+        inv = b.T @ coeff_list[i] <= 0
+        if equality_type_list[i] == "<=":
+            pass
+        elif equality_type_list[i] == "==":
+            inv = b.T @ coeff_list[i] == 0
+        invariants.append(inv)
     
     sol = Solver()
 
@@ -459,28 +459,32 @@ def prune(coeff_list:list[list[float]|list[int]], b):
         if sol.check() == unsat:
             invariants.pop(i)
             coeff_list.pop(i)
+            equality_type_list.pop(i)
         else:
             i += 1
         
         sol.pop()
 
-    return coeff_list
+    #print(coeff_list)
+    return coeff_list, equality_type_list
 
-def get_str_print_invariants(invariant_coeffs, b):
+def get_str_print_invariants(invariant_coeffs, types, b):
     invariant_strings = set()
-    for coeffs in invariant_coeffs:
-        flips = [-coeff for coeff in coeffs]
-
+    
+    for i, coeffs in enumerate(invariant_coeffs):
         c = np.array(coeffs)
-        inv = nsimplify(c.T @ b) <= 0 # pyright: ignore[reportOperatorIssue]
-        inv = to_dafny(inv)
-
-        if flips in invariant_coeffs:
-            eq = Eq(nsimplify(c.T @ b), 0)
-            inv = to_dafny(eq.lhs) + " == " + to_dafny(eq.rhs)
-            invariant_coeffs.remove(flips)
+        inv_type = types[i]
         
-        invariant_strings.add(inv)
+        if inv_type == "==":
+            eq = Eq(nsimplify(c.T @ b), 0)
+            lhs = to_dafny(eq.lhs)
+            rhs = to_dafny(eq.rhs)
+            inv_str = f"{lhs} == {rhs}"
+        else:
+            inv = nsimplify(c.T @ b) <= 0
+            inv_str = to_dafny(inv)
+        
+        invariant_strings.add(inv_str)
     
     for inv in invariant_strings:
         print(f"\t\t\t>>>> [{inv}]")
@@ -492,46 +496,67 @@ def analyze_invariants(found_floats:list[list[float]],
                        loop_path, vars_sym, vars_init, 
                        vars_trans, params, assume_int = True):
     
-    validated = set()
+    validated_coeffs = []
+    equality_type_list = []
+    seen_vectors = set()
 
     for inv in found_floats:
+        #print("Initial Invariant:", inv)
         if assume_int:
             inv = intify(inv)
-
+        #print("Updated Invariant:", inv)
+        
+        inv_tuple = tuple(inv)
+        if inv_tuple in seen_vectors:
+            continue
         if inv == [0]*len(inv) or inv == [-1,] + [0]*(len(inv)-1): 
             # skip trivial invariant with [0, 0 , ... , 0] or [-1, 0, 0, ... , 0]
             continue
-        
-        flip = [-coeff for coeff in inv]
-        if is_valid_invariant(inv, preconditions, loop_conditions, 
+
+        lhs_valid = is_valid_invariant(inv, preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
-                       vars_trans, params, assume_int):
+                       vars_trans, params, assume_int)
+        
+        flip = [-c for c in inv]
+        flip_tuple = tuple(flip)
+        rhs_valid = is_valid_invariant(flip, preconditions, loop_conditions, 
+                    loop_path, vars_sym, vars_init, 
+                    vars_trans, params, assume_int)
 
-            validated.add(str(inv))
-            if is_valid_invariant(flip, preconditions, loop_conditions, 
-                        loop_path, vars_sym, vars_init, 
-                        vars_trans, params, assume_int):
-                validated.add(str(flip))
-        else:
-            pass
+        if lhs_valid and rhs_valid:
+            validated_coeffs.append(inv)
+            equality_type_list.append("==")
+            
+            seen_vectors.add(inv_tuple)
+            seen_vectors.add(flip_tuple)
+            #print(inv, 'is an equality!')
 
-    validated_list = [literal_eval(inv_str) for inv_str in validated]
+        elif lhs_valid and not rhs_valid:
+            validated_coeffs.append(inv)
+            equality_type_list.append("<=")
+            seen_vectors.add(inv_tuple)
+            #print(inv, 'is an inequality!')
+
+        elif rhs_valid and not lhs_valid:
+            validated_coeffs.append(flip)
+            equality_type_list.append("<=")
+            seen_vectors.add(flip_tuple)
+            #print(flip, 'is an inequality! (flipped)')
+
     print("\t\t>>> Validated Invariants.")
 
     b_v_z3 = get_z3_basis(params, loop_path, vars_sym, assume_int = True)
     b_v_sym = get_sympy_basis(params, vars_sym)
 
-    final_invariants = prune(validated_list, b_v_z3)
-
+    final_invariants, types = prune(validated_coeffs, equality_type_list, b_v_z3)
 
     print(f"\t\t>>> Pruned Invariants.")
     print()
     print('\t\t>>> Invariants:')
-    get_str_print_invariants(final_invariants, b_v_sym)
 
-    return final_invariants
+    return get_str_print_invariants(final_invariants, types, b_v_sym)
 
-def solve(norm_constraint, 
+def solve(norm_constraints, 
           precondition_constraint, 
           farkas_constraints, 
           lambda_constraints,
@@ -541,16 +566,17 @@ def solve(norm_constraint,
     k = len(c)
     coeff_indices = range(k)
     sol = Solver()
-    sol.add(norm_constraint)
+    sol.add(norm_constraints)
 
     sol.add(precondition_constraint)
     sol.add(farkas_constraints)
     sol.add(lambda_constraints)
 
-    sol.set('timeout', 500)
+    sol.set('timeout', 10000)
     # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
     epsilon = 0.05
+    threshold = 0.1
 
     sol.push()
 
@@ -569,12 +595,10 @@ def solve(norm_constraint,
             sol.add(inactive_constraint)
             sol.add(active_nonzero_constraint)
             
-            curr = time.time()
-            end = curr + 0.5
+            #curr = time.time()
+            #end = curr + 0.2
 
-            while curr < end:
-                    
-                if sol.check() == sat:
+            while sol.check() == sat:
                     m = sol.model()
                     c_s = np.array([m[coeff] for coeff in c])
 
@@ -583,18 +607,22 @@ def solve(norm_constraint,
                         found_strs.add(str(c_s))
                         found_floats.append(pythonise_invariant(c_s))
 
-                    #λt_s = m[λt]
-                    #sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
+                    λt_s = m[λt]
+                    sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
                     # move away from trivial solution
 
-                    #l1_norm_s = Sum([Abs(coeff) for coeff in c_s])
-                    #l1_norm = Sum([Abs(coeff) for coeff in c])
+                    blocking_constraint = Sum([Abs(c[i] - c_s[i]) for i in range(k)]) >= threshold
+                    sol.add(blocking_constraint)
+                    # instead of dot product, use termwise difference for blocking. dot product blocking 
+                    # ended up banning appropriate search spaces.
 
-                    #sol.add(l1_norm <= l1_norm_s - epsilon)
+                    '''l1_norm_s = Sum([Abs(coeff) for coeff in c_s])
+                    l1_norm = Sum([Abs(coeff) for coeff in c])
+                    sol.add(l1_norm <= l1_norm_s - epsilon)
                     # force the solver to keep reducing its budget in the l1 norm, allowing it to hone in
-                    # on better and better solutions
-
-                curr = time.time()
+                    # on better and better solutions'''
+                
+                #curr = time.time()
 
             sol.pop()
 
@@ -642,7 +670,7 @@ def process_all(params, preconditions, loops, degree, assume_int = True):
     print(f"> Finished in {format(end_time - start_time, '.2f')}s")
         
 def main():
-    # [AI DISCLOSURE] Boilerplate
+    # [AI DISCLOSURE] Commandline boilerplate
     parser = argparse.ArgumentParser(description="Dafny Invariant Synthesizer")
     parser.add_argument("file", help="Path to the .dfy file")
     parser.add_argument("-d", "--degree", type=int, default=2, help="Polynomial degree (default: 2)")

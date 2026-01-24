@@ -8,9 +8,7 @@ method Nonagonal(n: int) returns (j: int)
     var i := 0;
     j := 0;
 
-    while (i < n)
-        invariant 0 <= i <= n
-        invariant j == i*(7*i - 5)/2
+    while (i < n) invariant 0 <= i <= n invariant j == i*(7*i - 5)/2 // insertion point remain 11, as do any other insertion points
     {
         i := i + 1;
         j := j + 7*i - 6;
