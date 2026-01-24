@@ -189,10 +189,9 @@ def constraints_and_setup(
     c = np.array([Real(f'a{i}') for i in coeff_indices])
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
 
-    l1_norm = Sum([Abs(coeff) for coeff in c])
-    norm_constraints = [c.T @ c == 1]
-    # switched to l1 norm. l2 was causing way too many issues with square roots and such. this is
-    # much more efficient and can be constrained far better (see solve loop)
+    #l1_norm = Sum([Abs(coeff) for coeff in c])
+
+    norm_constraint = c.T @ c <= 1
 
     precondition_constraint = get_precondition_constraints(equalities, c, λp)
 
@@ -231,7 +230,7 @@ def constraints_and_setup(
     lambda_constraints.extend([λl[i] >= 0 for i in range(len(λl))])
     lambda_constraints.extend([λg[i] >= 0 for i in range(len(λg))])
 
-    return norm_constraints, precondition_constraint, farkas_constraints, lambda_constraints, c, λt
+    return norm_constraint, precondition_constraint, farkas_constraints, lambda_constraints, c, λt
 
 def pythonise_invariant(coeffs):
     pythonised_coeffs = []
@@ -343,6 +342,8 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     inv_next = c.T @ b_v_z3_trans <= 0
 
     sol = Solver()
+    sol.set('timeout', 5000)
+
     sol.add(precondition_constraints)
 
     # given the precondition, 
@@ -350,7 +351,7 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     # then the invariant is false
     sol.push()
     sol.add(Not(inv_init))
-    if sol.check() == sat:
+    if sol.check() != unsat:
         return False
     sol.pop()
 
@@ -361,7 +362,7 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     sol.add(loop_constraints)
     sol.add(inv_curr)
     sol.add(Not(inv_next))
-    if sol.check() == sat:
+    if sol.check() != unsat:
         return False
     sol.pop()
 
@@ -437,6 +438,7 @@ def prune(coeff_list:list[list[float]|list[int]], equality_type_list, b):
         invariants.append(inv)
     
     sol = Solver()
+    sol.set('timeout', 5000)
 
     i = 0
     while i < len(invariants):
@@ -549,7 +551,7 @@ def analyze_invariants(found_floats:list[list[float]],
 
     return get_str_print_invariants(final_invariants, types, b_v_sym)
 
-def solve(norm_constraints, 
+def solve(norm_constraint, 
           precondition_constraint, 
           farkas_constraints, 
           lambda_constraints,
@@ -559,17 +561,17 @@ def solve(norm_constraints,
     k = len(c)
     coeff_indices = range(k)
     sol = Solver()
-    sol.add(norm_constraints)
+    sol.add(norm_constraint)
 
     sol.add(precondition_constraint)
     sol.add(farkas_constraints)
     sol.add(lambda_constraints)
 
-    sol.set('timeout', 10000)
+    sol.set('timeout', 5000)
     # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
     epsilon = 0.05
-    threshold = 0.866
+    threshold = 0.95
 
     sol.push()
 
@@ -580,7 +582,7 @@ def solve(norm_constraints,
     for choice_count in range(1, k+1):
         for active_coeffs in combinations(coeff_indices, choice_count):
 
-            #print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
+            print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
             inactive_constraint = [c[i] == 0 for i in coeff_indices if i not in active_coeffs]
             active_nonzero_constraint = [c[i] != 0 for i in active_coeffs]
 
@@ -588,36 +590,25 @@ def solve(norm_constraints,
             sol.add(inactive_constraint)
             sol.add(active_nonzero_constraint)
             
-            #curr = time.time()
-            #end = curr + 0.2
 
             while sol.check() == sat:
-                    m = sol.model()
-                    c_s = np.array([m[coeff] for coeff in c])
+                m = sol.model()
+                c_s = np.array([m[coeff] for coeff in c])
 
-                    if str(c_s) not in found_strs:
-                        print("\t\t\t>>>> Found Coefficients:", c_s)
-                        found_strs.add(str(c_s))
-                        found_floats.append(pythonise_invariant(c_s))
+                if str(c_s) not in found_strs:
+                    print("\t\t\t>>>> Found Coefficients:", c_s)
+                    found_strs.add(str(c_s))
+                    found_floats.append(pythonise_invariant(c_s))
 
-                    λt_s = m[λt]
-                    sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
-                    # move away from trivial solution
+                λt_s = m[λt]
+                sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
+                # move away from trivial solution
 
-                    sol.add(c.T @ c_s <= threshold)
+                blocking_constraint = c.T @ c_s <= threshold
+                sol.add(blocking_constraint)
 
-                    '''blocking_constraint = Sum([Abs(c[i] - c_s[i]) for i in range(k)]) >= threshold
-                    sol.add(blocking_constraint)
-                    # instead of dot product, use termwise difference for blocking. dot product blocking 
-                    # ended up banning appropriate search spaces.'''
-
-                    '''l1_norm_s = Sum([Abs(coeff) for coeff in c_s])
-                    l1_norm = Sum([Abs(coeff) for coeff in c])
-                    sol.add(l1_norm <= l1_norm_s - epsilon)
-                    # force the solver to keep reducing its budget in the l1 norm, allowing it to hone in
-                    # on better and better solutions'''
-                
-                #curr = time.time()
+                # AI AGENT - my blocking setup needs some sort of an upgrade. i think i want a setup with the l1 norm <= 1.
+                # how do i make sure it finds the right invariants? is it even possible for it to?
 
             sol.pop()
 
