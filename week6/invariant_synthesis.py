@@ -143,14 +143,14 @@ def constraints_and_setup(
     # should also store the update of previous variable.
     # i := i+1 followed by j := j+i should be i := i+1 and j := j+i+1. BUT!
     # j := j+i followed by i := i+1 should stay the same (no way to know i's update initially)
-    current_state = {v: v for v in set(vars_sym)}
+    current_state = {v: v for v in vars_sym}
     for sym, trans in zip(vars_sym, vars_trans):
         current_state[sym] = trans.subs(current_state)
     final_updates = list(current_state.items())
 
     M = []
     for ele in b_v:
-        expr = ele.subs(final_updates)
+        expr = ele.subs(final_updates, simultaneous=True)
         trans_vec = write_expression_as_basis_vector(expr, vars_sym, b_v)
         M.append(trans_vec)
     M = np.array(M)
@@ -190,7 +190,7 @@ def constraints_and_setup(
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
 
     l1_norm = Sum([Abs(coeff) for coeff in c])
-    norm_constraints = [l1_norm > 0, l1_norm <= 1]
+    norm_constraints = [c.T @ c == 1]
     # switched to l1 norm. l2 was causing way too many issues with square roots and such. this is
     # much more efficient and can be constrained far better (see solve loop)
 
@@ -305,7 +305,7 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     apply_basis = lambdify(vars_sym, b_v_sym, 'numpy')
     b_v_init = apply_basis(*vars_init)
     
-    current_state = {v: v for v in set(vars_sym)}
+    current_state = {v: v for v in vars_sym}
     for sym, trans in zip(vars_sym, vars_trans):
         current_state[sym] = trans.subs(current_state)
         
@@ -425,8 +425,7 @@ def get_sympy_basis(params, vars_sym):
     
 def prune(coeff_list:list[list[float]|list[int]], equality_type_list, b):
     coeff_list =  list(coeff_list)
-    print(coeff_list)
-
+    equality_type_list = list(equality_type_list)
 
     invariants = []
     for i in range(len(coeff_list)):
@@ -465,7 +464,6 @@ def prune(coeff_list:list[list[float]|list[int]], equality_type_list, b):
         
         sol.pop()
 
-    #print(coeff_list)
     return coeff_list, equality_type_list
 
 def get_str_print_invariants(invariant_coeffs, types, b):
@@ -501,10 +499,8 @@ def analyze_invariants(found_floats:list[list[float]],
     seen_vectors = set()
 
     for inv in found_floats:
-        #print("Initial Invariant:", inv)
         if assume_int:
             inv = intify(inv)
-        #print("Updated Invariant:", inv)
         
         inv_tuple = tuple(inv)
         if inv_tuple in seen_vectors:
@@ -529,19 +525,16 @@ def analyze_invariants(found_floats:list[list[float]],
             
             seen_vectors.add(inv_tuple)
             seen_vectors.add(flip_tuple)
-            #print(inv, 'is an equality!')
 
         elif lhs_valid and not rhs_valid:
             validated_coeffs.append(inv)
             equality_type_list.append("<=")
             seen_vectors.add(inv_tuple)
-            #print(inv, 'is an inequality!')
 
         elif rhs_valid and not lhs_valid:
             validated_coeffs.append(flip)
             equality_type_list.append("<=")
             seen_vectors.add(flip_tuple)
-            #print(flip, 'is an inequality! (flipped)')
 
     print("\t\t>>> Validated Invariants.")
 
@@ -576,7 +569,7 @@ def solve(norm_constraints,
     # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
     epsilon = 0.05
-    threshold = 0.1
+    threshold = 0.866
 
     sol.push()
 
@@ -587,7 +580,7 @@ def solve(norm_constraints,
     for choice_count in range(1, k+1):
         for active_coeffs in combinations(coeff_indices, choice_count):
 
-            print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
+            #print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
             inactive_constraint = [c[i] == 0 for i in coeff_indices if i not in active_coeffs]
             active_nonzero_constraint = [c[i] != 0 for i in active_coeffs]
 
@@ -611,10 +604,12 @@ def solve(norm_constraints,
                     sol.add(λt <= λt_s - epsilon) # pyright: ignore[reportOperatorIssue]
                     # move away from trivial solution
 
-                    blocking_constraint = Sum([Abs(c[i] - c_s[i]) for i in range(k)]) >= threshold
+                    sol.add(c.T @ c_s <= threshold)
+
+                    '''blocking_constraint = Sum([Abs(c[i] - c_s[i]) for i in range(k)]) >= threshold
                     sol.add(blocking_constraint)
                     # instead of dot product, use termwise difference for blocking. dot product blocking 
-                    # ended up banning appropriate search spaces.
+                    # ended up banning appropriate search spaces.'''
 
                     '''l1_norm_s = Sum([Abs(coeff) for coeff in c_s])
                     l1_norm = Sum([Abs(coeff) for coeff in c])
