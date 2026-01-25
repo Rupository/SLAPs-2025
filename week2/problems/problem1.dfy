@@ -9,13 +9,14 @@ method loop(n: int) returns (j: int)
     var i := 0;
     j := 0;
     
-    while i < n // Loop Condition (B)
+    while i < n invariant true ==> i - n <= 0 && i - j <= 0 && 2*i - j == 0
+    // Loop Condition (B)
 
-        invariant 0 <= i <= n
+        //invariant 0 <= i <= n
         // invariant to ensure that Loop Condition is met, and for Termination
         // at the end of the loop, (i <= n) AND (i >= n) := (i = n) => Q (Postcondition) 
 
-        invariant j == 2*i
+        //invariant j == 2*i
         // we want to arrive at the postcondition j = 2*n 
 
         // we must generalise this postcondition (CSUR14.pdf) to arrive at a statement

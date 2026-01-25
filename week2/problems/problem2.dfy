@@ -13,9 +13,9 @@ method IntegerDivision(dividend: int, divisor: int) returns (quotient: int, rema
     quotient := 0;
     remainder := dividend;
     
-    while remainder >= divisor
+    while remainder >= divisor invariant true ==> -64*remainder - 1 <= 0 && -2*dividend - 6*divisor - quotient + 4 <= 0 && 64*dividend - 64*divisor*quotient - quotient - 64*remainder <= 0 && dividend - 2*divisor*quotient - 2*divisor - 2*remainder + 1 <= 0 && dividend - divisor*quotient - remainder == 0 && -2*dividend + 2*divisor*quotient - divisor + 2*remainder <= 0
         
-        invariant dividend == divisor * quotient + remainder
+        //invariant dividend == divisor * quotient + remainder
         // we must generalise this postcondition (CSUR14.pdf) to arrive at a statement
         // which remains true at initialization, throughout ({I} S {B} => {I}) the loop body
         // and on termination (I AND NOT B => Q).
@@ -25,7 +25,7 @@ method IntegerDivision(dividend: int, divisor: int) returns (quotient: int, rema
         // the fact that division of positive integers is repeated subtraction till the smallest possible +ve 
         // remainder is reached. 
 
-        invariant 0 <= remainder
+        //invariant 0 <= remainder
         // postcondition: 0 <= remainder < divisor
 
         // genaralising, we note that it is possible for the remainder to exceed the divisor

@@ -55,10 +55,35 @@ def parse_vars(loop_path):
     
     return vars_sym, vars_init, vars_trans
 
+# [AI DISCLOSURE] - Parsing boilerplate 
+def clean_guard(guard_str):
+    guard_str = guard_str.strip()
+    if not guard_str.startswith("!"):
+        return guard_str
+
+    guard_str = guard_str[1:].strip()
+
+    while guard_str.startswith("(") and guard_str.endswith(")"):
+        guard_str = guard_str[1:-1].strip()
+        
+    if "<=" in guard_str:
+        return guard_str.replace("<=", ">")
+    elif ">=" in guard_str:
+        return guard_str.replace(">=", "<")
+    elif "==" in guard_str:
+        return guard_str.replace("==", "!=") # '!=' is valid for eval/Z3
+    elif "<" in guard_str:
+        return guard_str.replace("<", ">=")
+    elif ">" in guard_str:
+        return guard_str.replace(">", "<=")
+        
+    return guard_str
+
 def lhs_leq_zero_form(inequalities, assume_int=True):
     parsed_ineqs = []
     
     for cond in inequalities:
+        cond = clean_guard(cond)
         strict_offset = 1 if assume_int else 0
         
         if "==" in cond:
@@ -149,11 +174,6 @@ def constraints_and_setup(
     
     init_subs = {sym: val for sym, val in zip(vars_sym, vars_init)}
     b_v_init_sym = [b.subs(init_subs) for b in b_v]
-
-    '''apply_basis = lambdify(vars_sym, b_v, 'numpy')
-    b_v_init = apply_basis(*vars_init)
-    b_v_init_sym = apply_basis(*vars_init)
-    b_v_init_const = apply_basis(*vars_init)'''
     
     # important fix -> for transition matrix, updates containing previous variables (if encountered)
     # should also store the update of previous variable.
@@ -202,8 +222,6 @@ def constraints_and_setup(
     equalities = coeff_matching_conditions(lhs, rhs)
     c = np.array([Real(f'a{i}') for i in coeff_indices])
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
-
-    #l1_norm = Sum([Abs(coeff) for coeff in c])
 
     norm_constraint = c.T @ c <= 1
 
@@ -311,7 +329,7 @@ def is_valid_invariant(coeffs: list[int]|list[float],
         loop_constraints.append(loop_condition)
     
     for path_guard in path_guards:
-        path_guard = eval(path_guard, namespace)
+        path_guard = eval(clean_guard(path_guard), namespace)
         loop_constraints.append(path_guard)
 
     param_syms = [Symbol(param.get('name')) for param in params]
@@ -325,10 +343,6 @@ def is_valid_invariant(coeffs: list[int]|list[float],
                    key=lambda m: (total_degree(m), str(m)))
     
     init_subs = {sym: val for sym, val in zip(vars_sym, vars_init)}
-
-    #apply_basis = lambdify(vars_sym, b_v_sym, 'numpy')
-    #b_v_init = apply_basis(*vars_init)
-    z3_map = {str(k): namespace[str(k)] for k in vars_sym + param_syms}
 
     b_v_init_z3 = []
     for b in b_v_sym:
@@ -394,12 +408,19 @@ def is_valid_invariant(coeffs: list[int]|list[float],
         return False
     sol.pop()
 
-    # given the precondition, loop condition + ITE guards, and the previous invariant 
-    # if there exists a setup where the negation of the next invariant holds,
-    # then the invariant is false
+    # given the precondition, loop condition + ITE guards...
     sol.push()
     sol.add(loop_constraints)
     sol.add(inv_curr)
+
+    # [if (possible during path based checks) you end up at a case where the current invariant
+    # fails to hold for the loop + path guards, discard]
+    if sol.check() == unsat:
+        return False
+    
+    # and the previous invariant 
+    # if there exists a setup where the negation of the next invariant holds,
+    # then the invariant is false
     sol.add(Not(inv_next))
     if sol.check() != unsat:
         return False

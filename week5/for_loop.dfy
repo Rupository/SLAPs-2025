@@ -4,7 +4,7 @@ method Factorial(n: int) returns (result: int)
 {
   result := 1;
   
-  for i := 1 to n // needs to be n+1
+  for i := 1 to n + 1 // needs to be n+1
     invariant 1 <= i <= n + 1
     invariant result >= 1
   {

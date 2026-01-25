@@ -3,10 +3,11 @@
 - Any conditional statements provided in the file must be in the for of inequalities of dafny integer/float variables.
 - Variable updates must be linear in the set of variables.
 - The file should not declare variables with names which happen to be existing python classes and constructs.
+- ITEs should be formatted in a nested manner instead of shortening syntax.
 
 ### How to run
 - Run the following command from the root directory:
-    ```bash
+    ```
     python -m week6.invariant_synthesis <path_to_your_file>.dfy --[arguments]
     ```
 - Arguments include:

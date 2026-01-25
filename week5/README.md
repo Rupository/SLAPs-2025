@@ -26,6 +26,6 @@
 ### How to run
 
 - Run the following command from the root directory:
-    ```bash
+    ```
     python -m week5.parser <path_to_your_file>.dfy
     ```

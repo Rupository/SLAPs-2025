@@ -1,23 +1,22 @@
-// [AI DISCLOSURE] - Generated test case for disjunctive invariant synthesis
-method ComputeWeightedSum(limit: int) returns (total: int)
-  requires limit >= 0
-  ensures total >= limit
+method Compute(n: int) returns (x: int)
+  requires n >= 0
+  ensures x >= n
 {
   var i := 0;
-  total := 0;
+  x := 0;
 
-  while (i < limit)
-    invariant 0 <= i <= limit
-    invariant total >= i 
+  while (i < n)
   {
-    if i < 10 {
-      total := total + 1;
+    if (i < 10) {
+      x := x + 1;
     } 
-    else if i < 20 {
-      total := total + 2;
-    }
     else {
-      total := total + 3;
+      if (i < 20) {
+        x := x + 2;
+      }
+      else {
+        x := x + 3;
+      }
     }
     
     i := i + 1;

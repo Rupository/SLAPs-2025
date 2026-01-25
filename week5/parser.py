@@ -15,6 +15,12 @@ class DafnyJSONVisitor(dafnyVisitor):
         self.current_method = None
         self.state = {}
 
+    def get_original_text(self, ctx): # extract og program text instead of ANTLR parse
+        if ctx is None: 
+            return ""
+        stream = ctx.start.getInputStream()
+        return stream.getText(ctx.start.start, ctx.stop.stop)
+
     def visitProgram(self, ctx: dafnyParser.ProgramContext):
         self.visitChildren(ctx) # ctx is always the "current node" in the AST
         return self.methods
@@ -121,7 +127,7 @@ class DafnyJSONVisitor(dafnyVisitor):
                 return self._split_conditions(left) + self._split_conditions(right)
         
         # Base case: just return the text of this condition
-        return [expr_ctx.getText()]
+        return [self.get_original_text(expr_ctx)]
 
     def visitWhileStatement(self, ctx: dafnyParser.WhileStatementContext):
         # same idea as methodDecl - figure out what's up in the while loop
@@ -307,7 +313,7 @@ class DafnyJSONVisitor(dafnyVisitor):
 
         if stmt.ifStatement():
             if_ctx = stmt.ifStatement()
-            condition = if_ctx.expression().getText()
+            condition = self.get_original_text(if_ctx.expression())
 
             # THEN
             then_seq = if_ctx.sequence(0)

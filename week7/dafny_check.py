@@ -13,7 +13,14 @@ def get_file_info(filename:str, method_id = 0):
 def get_path_invariant_string(path_guards, invariant_strs):
     hypothesis = ''
     if path_guards != []:
-        hypothesis = path_guards
+        counter = len(path_guards)
+        for guard_str in path_guards:
+            hypothesis += f"{guard_str}"
+            counter -= 1
+            if counter > 0:
+                hypothesis += " && "
+            else:
+                pass
     else:
         hypothesis = 'true'
     
