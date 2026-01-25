@@ -696,6 +696,7 @@ def process_all(params, preconditions, loops, degree, assume_int = True, include
                                              degree,
                                              assume_int,
                                              include_param_combos)
+            
             found_floats = solve(*path_setup, threshold=threshold)
 
             analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
@@ -716,7 +717,7 @@ def main():
     parser.add_argument("file", help="Path to the .dfy file")
     parser.add_argument("-d", "--degree", type=int, default=2, help="Polynomial degree (default: 2)")
     parser.add_argument("-m", "--method", type=int, default=0, help="Method to analyze (default: 0th)")
-    parser.add_argument("--assume_real", action="store_true", help="Assume real variables instead of integers")
+    parser.add_argument("-r", "--real", action="store_true", help="Assume real variables instead of integers")
     parser.add_argument("-c", "--combos", action="store_true", help="Include parameters combinations in basis generation (e.g. x*n)")  
     parser.add_argument("-t", "--threshold", type=float, default=0.95, help="Blocking threshold (default: 0.95)")
 
@@ -735,10 +736,10 @@ def main():
         
         process_all(
             params, 
-            preconditions, 
+            preconditions,
             loops, 
             degree=args.degree, 
-            assume_int=(not args.assume_real), 
+            assume_int=(not args.real), 
             include_param_combos=args.combos,
             threshold=args.threshold
         )

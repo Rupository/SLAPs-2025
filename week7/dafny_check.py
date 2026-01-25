@@ -50,7 +50,7 @@ def write_to_file(filename: str, path_inv_str, insertion_pt):
     except Exception as e:
         print(f"Error writing to file: {e}")
 
-def process_all(filename:str, params, preconditions, loops, insertion_pts, degree, assume_int = True, method_id = 0):
+def process_all(filename:str, params, preconditions, loops, insertion_pts, degree, assume_int = True, method_id = 0, threshold=0.95, include_param_combos=False):
     start_time = time.time()
     loop_count = 0
     for loop in loops:
@@ -64,6 +64,7 @@ def process_all(filename:str, params, preconditions, loops, insertion_pts, degre
             print()
             path_guards = loop_path.get('guards')
             vars_sym, vars_init, vars_trans = invariant_synthesis.parse_vars(loop_path)
+            
             path_setup = invariant_synthesis.constraints_and_setup(vars_sym, 
                                              vars_init, 
                                              vars_trans, 
@@ -72,10 +73,13 @@ def process_all(filename:str, params, preconditions, loops, insertion_pts, degre
                                              loop_conditions,
                                              path_guards,
                                              degree,
-                                             assume_int)
-            found_floats = invariant_synthesis.solve(*path_setup)
+                                             assume_int,
+                                             include_param_combos=include_param_combos)
+            
+            found_floats = invariant_synthesis.solve(*path_setup, threshold=threshold)
+            
             invariant_strs = invariant_synthesis.analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
-                               vars_sym, vars_init, vars_trans, params, degree, assume_int)
+                               vars_sym, vars_init, vars_trans, params, degree, assume_int, include_param_combos=include_param_combos)
             
             path_inv_str = get_path_invariant_string(path_guards, invariant_strs)
             write_to_file(filename, path_inv_str, insertion_pt)
@@ -107,14 +111,16 @@ def main():
     parser.add_argument("files", nargs='+', help="Path to the .dfy file(s)")
     parser.add_argument("-d", "--degree", type=int, default=2, help="Polynomial degree (default: 2)")
     parser.add_argument("-m", "--method", type=int, default=0, help="Method to analyze (default: 0th)")
-    parser.add_argument("--assume_real", action="store_true", help="Assume real variables instead of integers")
+    parser.add_argument("--real", action="store_true", help="Assume real variables instead of integers")
+    parser.add_argument("-t", "--threshold", type=float, default=0.95, help="Blocking threshold (default: 0.95)")
+    parser.add_argument("-c", "--combos", action="store_true", help="Include parameters combinations in basis generation (e.g. x*n)")
 
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
     args = parser.parse_args()
-    assume_int = not args.assume_real
+    assume_int = not args.real
 
     for filename in args.files:
         print(f"> Processing File: {filename}")
@@ -132,15 +138,15 @@ def main():
                 insertion_pts, 
                 degree=args.degree, 
                 assume_int=assume_int, 
-                method_id=args.method
+                method_id=args.method,
+                threshold=args.threshold,
+                include_param_combos=args.combos
             )
             
             run_verification(filename)
             
         except Exception as e:
-            print(f"Error processing {filename}: {e}")
-            import traceback
-            traceback.print_exc()
+            raise e 
 
 if __name__ == "__main__":
     main()
