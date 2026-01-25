@@ -9,7 +9,7 @@ method loop(n: int) returns (j: int)
     var i := 0;
     j := 0;
     
-    while i < n invariant true ==> i - n <= 0 && i - j <= 0 && 2*i - j == 0
+    while i < n invariant true ==> i - n <= 0 && 2*i - j == 0 && i - j <= 0
     // Loop Condition (B)
 
         //invariant 0 <= i <= n

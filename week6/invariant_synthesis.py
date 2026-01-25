@@ -57,6 +57,7 @@ def parse_vars(loop_path):
 
 # [AI DISCLOSURE] - Parsing boilerplate 
 def clean_guard(guard_str):
+    #return guard_str
     guard_str = guard_str.strip()
     if not guard_str.startswith("!"):
         return guard_str
@@ -223,7 +224,7 @@ def constraints_and_setup(
     c = np.array([Real(f'a{i}') for i in coeff_indices])
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
 
-    norm_constraint = c.T @ c <= 1
+    norm_constraints = [c.T @ c == 1, c.T @ c >= 0.99]
 
     precondition_constraint = get_precondition_constraints(equalities, c, λp)
 
@@ -262,7 +263,7 @@ def constraints_and_setup(
     lambda_constraints.extend([λl[i] >= 0 for i in range(len(λl))])
     lambda_constraints.extend([λg[i] >= 0 for i in range(len(λg))])
 
-    return norm_constraint, precondition_constraint, farkas_constraints, lambda_constraints, c, λt
+    return norm_constraints, precondition_constraint, farkas_constraints, lambda_constraints, c, λt
 
 def pythonise_invariant(coeffs):
     pythonised_coeffs = []
@@ -276,7 +277,10 @@ def pythonise_invariant(coeffs):
 
 def intify(coeffs:list[float]):
 
-    coeffs_sym = [nsimplify(coeff, tolerance=1e-10) for coeff in coeffs]
+    min_val = min([abs(c) for c in coeffs if c != 0])
+    normalized = [c / min_val for c in coeffs]
+
+    coeffs_sym = [nsimplify(coeff, tolerance=1e-10) for coeff in normalized]
     gcd_all = reduce(gcd, coeffs_sym)
 
     while not gcd_all.equals(1):
@@ -574,8 +578,10 @@ def analyze_invariants(found_floats:list[list[float]],
     seen_vectors = set()
 
     for inv in found_floats:
+        #print("pre:", inv)
         if assume_int:
             inv = intify(inv)
+        #print("post:", inv)
         
         inv_tuple = tuple(inv)
         if inv_tuple in seen_vectors:
@@ -624,7 +630,7 @@ def analyze_invariants(found_floats:list[list[float]],
 
     return get_str_print_invariants(final_invariants, types, b_v_sym)
 
-def solve(norm_constraint, 
+def solve(norm_constraints, 
           precondition_constraint, 
           farkas_constraints, 
           lambda_constraints,
@@ -635,7 +641,7 @@ def solve(norm_constraint,
     k = len(c)
     coeff_indices = range(k)
     sol = Solver()
-    sol.add(norm_constraint)
+    sol.add(norm_constraints)
 
     sol.add(precondition_constraint)
     sol.add(farkas_constraints)
@@ -656,7 +662,7 @@ def solve(norm_constraint,
     for choice_count in range(1, k+1):
         for active_coeffs in combinations(coeff_indices, choice_count):
 
-            print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
+            #print("\t\t>>>> Active:", [c[i] for i in active_coeffs])
             inactive_constraint = [c[i] == 0 for i in coeff_indices if i not in active_coeffs]
             active_nonzero_constraint = [c[i] != 0 for i in active_coeffs]
 

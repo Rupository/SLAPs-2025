@@ -8,9 +8,9 @@ method Pentagonal(n: int) returns (j: int)
     var i := 1;
     j := 1;
 
-    while (i < n)
-        invariant 1 <= i <= n
-        invariant j == (3*i*i - i)/2
+    while (i < n) invariant true ==> 3*i*i - i - 2*j == 0 && i - n <= 0 && 1 - i <= 0
+        //invariant 1 <= i <= n
+        //invariant j == (3*i*i - i)/2
     {
         i := i + 1;
         j := j + 3*i - 2;
