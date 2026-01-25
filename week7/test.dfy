@@ -7,7 +7,7 @@ method Sum(n: int) returns (s: int)
     var i := 0;
     s := 0;
     
-    while (i < n) 
+    while (i < n) invariant true ==> i - n <= 0 && -i*i + i + 2*s == 0 && -i*i - 2*i + 2*s - 2 <= 0
     {
         s := s + i;
         i := i + 1;

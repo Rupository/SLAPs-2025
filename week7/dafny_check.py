@@ -17,7 +17,7 @@ def get_path_invariant_string(path_guards, invariant_strs):
     else:
         hypothesis = 'true'
     
-    path_inv_str = f' invariant {hypothesis} ==>'
+    path_inv_str = f'invariant {hypothesis} ==>'
 
     counter = len(invariant_strs) 
     for inv_str in invariant_strs:
@@ -30,18 +30,20 @@ def get_path_invariant_string(path_guards, invariant_strs):
 
     return path_inv_str
 
-def write_to_file(filename:str, path_inv_str, insertion_pt, method_id = 0):
+def write_to_file(filename: str, path_inv_str, insertion_pt):
     if not path_inv_str:
         return
-
+    
     try:
         with open(filename, "r") as f:
             lines = f.readlines()
+
         id = int(insertion_pt) - 1
+
         if 0 <= id < len(lines):
-            current_line = lines[id].rstrip('\n')
-            new_line = f"{current_line} {path_inv_str} "
-            lines[id] = new_line
+            current_line = lines[id].rstrip()
+            lines[id] = f"{current_line} {path_inv_str}\n"
+
             with open(filename, "w") as f:
                 f.writelines(lines)
 
@@ -76,8 +78,7 @@ def process_all(filename:str, params, preconditions, loops, insertion_pts, degre
                                vars_sym, vars_init, vars_trans, params, assume_int)
             
             path_inv_str = get_path_invariant_string(path_guards, invariant_strs)
-            write_to_file(filename, path_inv_str, insertion_pt, method_id)
-            # AI Agent - is this conceptually correct? will it work?
+            write_to_file(filename, path_inv_str, insertion_pt)
 
             path_count += 1
             print()
@@ -90,7 +91,7 @@ def process_all(filename:str, params, preconditions, loops, insertion_pts, degre
     print()
 
 def run_verification(filename):
-
+    print()
     print(f"> Running Dafny Verification...")
 
     try:
@@ -133,6 +134,8 @@ def main():
             assume_int=assume_int, 
             method_id=args.method
         )
+
+        run_verification(args.file)
         
     except Exception as e:
         print(f"Error: {e}")
