@@ -75,7 +75,7 @@ def process_all(filename:str, params, preconditions, loops, insertion_pts, degre
                                              assume_int)
             found_floats = invariant_synthesis.solve(*path_setup)
             invariant_strs = invariant_synthesis.analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
-                               vars_sym, vars_init, vars_trans, params, assume_int)
+                               vars_sym, vars_init, vars_trans, params, degree, assume_int)
             
             path_inv_str = get_path_invariant_string(path_guards, invariant_strs)
             write_to_file(filename, path_inv_str, insertion_pt)

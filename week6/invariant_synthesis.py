@@ -257,7 +257,7 @@ def intify(coeffs:list[float]):
 def is_valid_invariant(coeffs: list[int]|list[float], 
                        preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
-                       vars_trans, params, assume_int = True):
+                       vars_trans, params, degree, assume_int = True):
     
     vars_sym = list(vars_sym)
     vars_init = list(vars_init)
@@ -266,7 +266,6 @@ def is_valid_invariant(coeffs: list[int]|list[float],
     var_data = loop_path.get('updates')
     path_guards = loop_path.get('guards')
 
-    degree = int()
     namespace = dict()
     if assume_int:
         params_dict = {param.get('name') : Int(param.get('name')) for param in params}
@@ -297,7 +296,6 @@ def is_valid_invariant(coeffs: list[int]|list[float],
         path_guard = eval(path_guard, namespace)
         loop_constraints.append(path_guard)
 
-    degree = len(vars_dict)
     b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
     
@@ -368,11 +366,10 @@ def is_valid_invariant(coeffs: list[int]|list[float],
 
     return True
 
-def get_z3_basis(params, loop_path, vars_sym, assume_int = True):
+def get_z3_basis(params, loop_path, vars_sym, degree, assume_int = True):
 
     var_data = loop_path.get('updates')
 
-    degree = int()
     namespace = dict()
     if assume_int:
         params_dict = {param.get('name') : Int(param.get('name')) for param in params}
@@ -388,7 +385,6 @@ def get_z3_basis(params, loop_path, vars_sym, assume_int = True):
         namespace.update(vars_dict)
 
     namespace['__builtins__'] = None
-    degree = len(vars_dict)
 
     b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
@@ -413,8 +409,7 @@ def get_z3_basis(params, loop_path, vars_sym, assume_int = True):
     
     return np.array(b_v_z3)
 
-def get_sympy_basis(params, vars_sym):
-    degree = len(vars_sym)
+def get_sympy_basis(params, vars_sym, degree):
     b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
     
@@ -494,7 +489,7 @@ def get_str_print_invariants(invariant_coeffs, types, b):
 def analyze_invariants(found_floats:list[list[float]], 
                        preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
-                       vars_trans, params, assume_int = True):
+                       vars_trans, params, degree, assume_int = True):
     
     validated_coeffs = []
     equality_type_list = []
@@ -513,13 +508,13 @@ def analyze_invariants(found_floats:list[list[float]],
 
         lhs_valid = is_valid_invariant(inv, preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
-                       vars_trans, params, assume_int)
+                       vars_trans, params, degree, assume_int)
         
         flip = [-c for c in inv]
         flip_tuple = tuple(flip)
         rhs_valid = is_valid_invariant(flip, preconditions, loop_conditions, 
                     loop_path, vars_sym, vars_init, 
-                    vars_trans, params, assume_int)
+                    vars_trans, params, degree, assume_int)
 
         if lhs_valid and rhs_valid:
             validated_coeffs.append(inv)
@@ -540,8 +535,8 @@ def analyze_invariants(found_floats:list[list[float]],
 
     print("\t\t>>> Validated Invariants.")
 
-    b_v_z3 = get_z3_basis(params, loop_path, vars_sym, assume_int = True)
-    b_v_sym = get_sympy_basis(params, vars_sym)
+    b_v_z3 = get_z3_basis(params, loop_path, vars_sym, degree, assume_int = True)
+    b_v_sym = get_sympy_basis(params, vars_sym, degree)
 
     final_invariants, types = prune(validated_coeffs, equality_type_list, b_v_z3)
 
@@ -645,7 +640,7 @@ def process_all(params, preconditions, loops, degree, assume_int = True):
             found_floats = solve(*path_setup)
 
             analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
-                               vars_sym, vars_init, vars_trans, params, assume_int)
+                               vars_sym, vars_init, vars_trans, params, degree, assume_int)
             path_count += 1
             print()
         
