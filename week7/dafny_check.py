@@ -103,7 +103,7 @@ def run_verification(filename):
 
 def main():
     # [AI DISCLOSURE] Commandline boilerplate
-    parser = argparse.ArgumentParser(description="Dafny Invariant Checker & Injector")
+    parser = argparse.ArgumentParser(description="Dafny Invariant Synthesiser & Injector")
     parser.add_argument("files", nargs='+', help="Path to the .dfy file(s)")
     parser.add_argument("-d", "--degree", type=int, default=2, help="Polynomial degree (default: 2)")
     parser.add_argument("-m", "--method", type=int, default=0, help="Method to analyze (default: 0th)")

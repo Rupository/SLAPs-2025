@@ -42,7 +42,12 @@ def parse_vars(loop_path):
         var_sym = Symbol(var.get('name'))
         vars_sym.append(var_sym)
 
-        var_init = int(var.get('init'))
+        init_str = var.get('init')
+        try:
+            var_init = int(init_str)
+        except ValueError:
+            var_init = parse_expr(init_str)
+        
         vars_init.append(var_init)
 
         var_trans = parse_expr(var.get('trans'))
@@ -124,20 +129,31 @@ def constraints_and_setup(
                     loop_conditions,
                     path_guards,
                     degree,
-                    assume_int = True
+                    assume_int = True,
+                    include_param_combos = False
                     ):
 
     vars_sym = list(vars_sym)
     vars_init = list(vars_init)
     vars_trans = list(vars_trans)
+
+    param_syms = [Symbol(param.get('name')) for param in params]
+
+    if include_param_combos:
+        basis_generators = vars_sym + param_syms
+    else:
+        basis_generators = vars_sym
     
-    b_v = sorted(list(itermonomials(vars_sym, degree)), 
+    b_v = sorted(list(itermonomials(basis_generators, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
     
-    apply_basis = lambdify(vars_sym, b_v, 'numpy')
+    init_subs = {sym: val for sym, val in zip(vars_sym, vars_init)}
+    b_v_init_sym = [b.subs(init_subs) for b in b_v]
+
+    '''apply_basis = lambdify(vars_sym, b_v, 'numpy')
     b_v_init = apply_basis(*vars_init)
     b_v_init_sym = apply_basis(*vars_init)
-    b_v_init_const = apply_basis(*vars_init)
+    b_v_init_const = apply_basis(*vars_init)'''
     
     # important fix -> for transition matrix, updates containing previous variables (if encountered)
     # should also store the update of previous variable.
@@ -148,27 +164,25 @@ def constraints_and_setup(
         current_state[sym] = trans.subs(current_state)
     final_updates = list(current_state.items())
 
+    poly_vars = vars_sym + param_syms if include_param_combos else vars_sym
+
     M = []
     for ele in b_v:
         expr = ele.subs(final_updates, simultaneous=True)
-        trans_vec = write_expression_as_basis_vector(expr, vars_sym, b_v)
+        trans_vec = write_expression_as_basis_vector(expr, poly_vars, b_v)
         M.append(trans_vec)
     M = np.array(M)
-    #print(M)
+    
+    if not include_param_combos:
+        for param in params:
+            param = param.get('name')
+            param_sym = Symbol(param)
+            b_v_init_sym.append(param_sym)
+            b_v.append(param_sym)
+            vars_sym.append(param_sym)
 
-    for param in params:
-        param = param.get('name')
-        param_sym = Symbol(param)
-        b_v_init_sym.append(param_sym)
-        b_v.append(param_sym)
-        vars_sym.append(param_sym)
-
-        param = Real(f'{param}')
-        b_v_init.append(param)
-        b_v_init_const.append(0)
-
-        M = np.pad(M, ((0, 1), (0, 1)))
-        M[-1, -1] = 1
+            M = np.pad(M, ((0, 1), (0, 1)))
+            M[-1, -1] = 1
     
     k = len(b_v_init_sym)
     coeff_indices = range(k)
@@ -203,8 +217,8 @@ def constraints_and_setup(
     loop_conditions = lhs_leq_zero_form(loop_conditions, assume_int)
     path_guards = lhs_leq_zero_form(path_guards, assume_int)
 
-    loop_cond_vecs = np.array([write_expression_as_basis_vector(expr, vars_sym, b_v) for expr in loop_conditions])
-    path_guard_vecs = np.array([write_expression_as_basis_vector(expr, vars_sym, b_v) for expr in path_guards])
+    loop_cond_vecs = np.array([write_expression_as_basis_vector(expr, poly_vars, b_v) for expr in loop_conditions])
+    path_guard_vecs = np.array([write_expression_as_basis_vector(expr, poly_vars, b_v) for expr in path_guards])
 
     λl = np.array([Real(f'λl{i}') for i in range(len(loop_conditions))])
     λg = np.array([Real(f'λg{i}') for i in range(len(path_guards))])
@@ -253,11 +267,15 @@ def intify(coeffs:list[float]):
     
     return [int(coeff) for coeff in coeffs_sym]
 
+def to_z3(sympy_expr, namespace):
+    expr_str = str(sympy_expr)
+    return eval(expr_str, namespace)
 
 def is_valid_invariant(coeffs: list[int]|list[float], 
                        preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
-                       vars_trans, params, degree, assume_int = True):
+                       vars_trans, params, degree, 
+                       assume_int = True, include_param_combos = False):
     
     vars_sym = list(vars_sym)
     vars_init = list(vars_init)
@@ -296,12 +314,27 @@ def is_valid_invariant(coeffs: list[int]|list[float],
         path_guard = eval(path_guard, namespace)
         loop_constraints.append(path_guard)
 
-    b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
+    param_syms = [Symbol(param.get('name')) for param in params]
+
+    if include_param_combos:
+        basis_generators = vars_sym + param_syms
+    else:
+        basis_generators = vars_sym
+
+    b_v_sym = sorted(list(itermonomials(basis_generators, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
     
-    apply_basis = lambdify(vars_sym, b_v_sym, 'numpy')
-    b_v_init = apply_basis(*vars_init)
-    
+    init_subs = {sym: val for sym, val in zip(vars_sym, vars_init)}
+
+    #apply_basis = lambdify(vars_sym, b_v_sym, 'numpy')
+    #b_v_init = apply_basis(*vars_init)
+    z3_map = {str(k): namespace[str(k)] for k in vars_sym + param_syms}
+
+    b_v_init_z3 = []
+    for b in b_v_sym:
+        init_val_sym = b.subs(init_subs)
+        b_v_init_z3.append(to_z3(init_val_sym, namespace))
+
     current_state = {v: v for v in vars_sym}
     for sym, trans in zip(vars_sym, vars_trans):
         current_state[sym] = trans.subs(current_state)
@@ -316,26 +349,34 @@ def is_valid_invariant(coeffs: list[int]|list[float],
         if not mono.is_constant():
             powers = mono.as_powers_dict()
             for var_sym, exponent in powers.items():
+
                 var_z3 = namespace[str(var_sym)]
-                var_trans_z3 = eval(transition_map[str(var_sym)], namespace)
+
+                if str(var_sym) in transition_map:
+                    var_trans_z3 = eval(transition_map[str(var_sym)], namespace)
+                else:
+                    var_trans_z3 = var_z3
+                
                 term = term * (var_z3 ** exponent)
                 term_trans = term_trans * (var_trans_z3 ** exponent)
+
         b_v_z3.append(term)
         b_v_z3_trans.append(term_trans)
     
-    if assume_int:
-        param_list = [Int(param.get('name')) for param in params]
-    else:
-        param_list = [Real(param.get('name')) for param in params]
+    if not include_param_combos:
+        if assume_int:
+            param_list = [Int(param.get('name')) for param in params]
+        else:
+            param_list = [Real(param.get('name')) for param in params]
 
-    for param in param_list:
-        b_v_init.append(param)
-        b_v_z3.append(param)
-        b_v_z3_trans.append(param)
+        for param in param_list:
+            b_v_init_z3.append(param)
+            b_v_z3.append(param)
+            b_v_z3_trans.append(param)
     
     c = np.array(coeffs)
 
-    inv_init = c.T @ b_v_init <= 0
+    inv_init = c.T @ b_v_init_z3 <= 0
     inv_curr = c.T @ b_v_z3 <= 0
     inv_next = c.T @ b_v_z3_trans <= 0
 
@@ -366,7 +407,7 @@ def is_valid_invariant(coeffs: list[int]|list[float],
 
     return True
 
-def get_z3_basis(params, loop_path, vars_sym, degree, assume_int = True):
+def get_z3_basis(params, loop_path, vars_sym, degree, assume_int = True, include_param_combos = False):
 
     var_data = loop_path.get('updates')
 
@@ -386,7 +427,14 @@ def get_z3_basis(params, loop_path, vars_sym, degree, assume_int = True):
 
     namespace['__builtins__'] = None
 
-    b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
+    param_syms = [Symbol(param.get('name')) for param in params]
+
+    if include_param_combos:
+        basis_generators = vars_sym + param_syms
+    else:
+        basis_generators = vars_sym
+
+    b_v_sym = sorted(list(itermonomials(basis_generators, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
     
     b_v_z3 = []
@@ -399,23 +447,32 @@ def get_z3_basis(params, loop_path, vars_sym, degree, assume_int = True):
                 term = term * (var_z3 ** exponent)
         b_v_z3.append(term)
     
-    if assume_int:
-        param_list = [Int(param.get('name')) for param in params]
-    else:
-        param_list = [Real(param.get('name')) for param in params]
+    if not include_param_combos:
+        if assume_int:
+            param_list = [Int(param.get('name')) for param in params]
+        else:
+            param_list = [Real(param.get('name')) for param in params]
 
-    for param in param_list:
-        b_v_z3.append(param)
+        for param in param_list:
+            b_v_z3.append(param)
     
     return np.array(b_v_z3)
 
-def get_sympy_basis(params, vars_sym, degree):
-    b_v_sym = sorted(list(itermonomials(vars_sym, degree)), 
+def get_sympy_basis(params, vars_sym, degree, include_param_combos = False):
+    param_syms = [Symbol(param.get('name')) for param in params]
+
+    if include_param_combos:
+        basis_generators = vars_sym + param_syms
+    else:
+        basis_generators = vars_sym
+
+    b_v_sym = sorted(list(itermonomials(basis_generators, degree)), 
                    key=lambda m: (total_degree(m), str(m)))
     
-    param_list = [Symbol(param.get('name')) for param in params]
-    for param in param_list:
-        b_v_sym.append(param)
+    if not include_param_combos:
+        param_list = [Symbol(param.get('name')) for param in params]
+        for param in param_list:
+            b_v_sym.append(param)
 
     return b_v_sym
     
@@ -489,7 +546,7 @@ def get_str_print_invariants(invariant_coeffs, types, b):
 def analyze_invariants(found_floats:list[list[float]], 
                        preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
-                       vars_trans, params, degree, assume_int = True):
+                       vars_trans, params, degree, assume_int = True, include_param_combos = False):
     
     validated_coeffs = []
     equality_type_list = []
@@ -508,13 +565,13 @@ def analyze_invariants(found_floats:list[list[float]],
 
         lhs_valid = is_valid_invariant(inv, preconditions, loop_conditions, 
                        loop_path, vars_sym, vars_init, 
-                       vars_trans, params, degree, assume_int)
+                       vars_trans, params, degree, assume_int, include_param_combos)
         
         flip = [-c for c in inv]
         flip_tuple = tuple(flip)
         rhs_valid = is_valid_invariant(flip, preconditions, loop_conditions, 
                     loop_path, vars_sym, vars_init, 
-                    vars_trans, params, degree, assume_int)
+                    vars_trans, params, degree, assume_int, include_param_combos)
 
         if lhs_valid and rhs_valid:
             validated_coeffs.append(inv)
@@ -535,8 +592,8 @@ def analyze_invariants(found_floats:list[list[float]],
 
     print("\t\t>>> Validated Invariants.")
 
-    b_v_z3 = get_z3_basis(params, loop_path, vars_sym, degree, assume_int = True)
-    b_v_sym = get_sympy_basis(params, vars_sym, degree)
+    b_v_z3 = get_z3_basis(params, loop_path, vars_sym, degree, assume_int, include_param_combos)
+    b_v_sym = get_sympy_basis(params, vars_sym, degree, include_param_combos)
 
     final_invariants, types = prune(validated_coeffs, equality_type_list, b_v_z3)
 
@@ -613,7 +670,7 @@ def solve(norm_constraint,
     print()
     return found_floats
 
-def process_all(params, preconditions, loops, degree, assume_int = True):
+def process_all(params, preconditions, loops, degree, assume_int = True, include_param_combos = False):
     start_time = time.time()
     loop_count = 1
     for loop in loops:
@@ -636,11 +693,13 @@ def process_all(params, preconditions, loops, degree, assume_int = True):
                                              loop_conditions,
                                              path_guards,
                                              degree,
-                                             assume_int)
+                                             assume_int,
+                                             include_param_combos)
             found_floats = solve(*path_setup)
 
             analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
-                               vars_sym, vars_init, vars_trans, params, degree, assume_int)
+                               vars_sym, vars_init, vars_trans, params, degree, assume_int,
+                               include_param_combos)
             path_count += 1
             print()
         
@@ -656,6 +715,8 @@ def main():
     parser.add_argument("file", help="Path to the .dfy file")
     parser.add_argument("-d", "--degree", type=int, default=2, help="Polynomial degree (default: 2)")
     parser.add_argument("-m", "--method", type=int, default=0, help="Method to analyze (default: 0th)")
+    parser.add_argument("--assume_real", action="store_true", help="Assume real variables instead of integers")
+    parser.add_argument("-c", "--combos", action="store_true", help="Include parameters combinations in basis generation (e.g. x*n)")  
 
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -669,10 +730,21 @@ def main():
 
     try:
         params, preconditions, loops = load_data(args.file, method_id=args.method)
-        process_all(params, preconditions, loops, degree=args.degree)
+        
+        # [MODIFIED] Passing all arguments correctly
+        # Note: assume_int should be False if --assume_real is passed
+        process_all(
+            params, 
+            preconditions, 
+            loops, 
+            degree=args.degree, 
+            assume_int=(not args.assume_real), 
+            include_param_combos=args.combos
+        )
     except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
+        # print(f"Error: {e}")
+        # Using raise instead of print(e) helps debug the traceback if it crashes
+        raise e 
 
 if __name__ == "__main__":
     main()
