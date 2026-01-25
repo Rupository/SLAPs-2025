@@ -571,7 +571,7 @@ def solve(norm_constraint,
     # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
     epsilon = 0.05
-    threshold = 0.8 # switch to 0.95 for benchmarks
+    threshold = 0.95 # switch to 0.95 for benchmarks
 
     sol.push()
 

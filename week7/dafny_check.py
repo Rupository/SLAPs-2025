@@ -104,7 +104,7 @@ def run_verification(filename):
 def main():
     # [AI DISCLOSURE] Commandline boilerplate
     parser = argparse.ArgumentParser(description="Dafny Invariant Checker & Injector")
-    parser.add_argument("file", help="Path to the .dfy file")
+    parser.add_argument("files", nargs='+', help="Path to the .dfy file(s)")
     parser.add_argument("-d", "--degree", type=int, default=2, help="Polynomial degree (default: 2)")
     parser.add_argument("-m", "--method", type=int, default=0, help="Method to analyze (default: 0th)")
     parser.add_argument("--assume_real", action="store_true", help="Assume real variables instead of integers")
@@ -114,34 +114,33 @@ def main():
         sys.exit(1)
 
     args = parser.parse_args()
-
-    if not os.path.exists(args.file):
-        print(f"Error: File '{args.file}' not found.")
-        sys.exit(1)
-
     assume_int = not args.assume_real
 
-    try:
-        params, preconditions, loops, insertion_pts = get_file_info(args.file, method_id=args.method)
-        
-        process_all(
-            args.file, 
-            params, 
-            preconditions, 
-            loops, 
-            insertion_pts, 
-            degree=args.degree, 
-            assume_int=assume_int, 
-            method_id=args.method
-        )
+    for filename in args.files:
+        print(f"> Processing File: {filename}")
+        if not os.path.exists(filename):
+            print(f"Error: File '{filename}' not found.")
+            continue
 
-        run_verification(args.file)
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+        try:
+            params, preconditions, loops, insertion_pts = get_file_info(filename, method_id=args.method)
+            process_all(
+                filename, 
+                params, 
+                preconditions, 
+                loops, 
+                insertion_pts, 
+                degree=args.degree, 
+                assume_int=assume_int, 
+                method_id=args.method
+            )
+            
+            run_verification(filename)
+            
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")
+            import traceback
+            traceback.print_exc()
 
 if __name__ == "__main__":
     main()
