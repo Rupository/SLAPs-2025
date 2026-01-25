@@ -608,7 +608,8 @@ def solve(norm_constraint,
           farkas_constraints, 
           lambda_constraints,
           c,
-          λt):
+          λt,
+          threshold=0.95):
     
     k = len(c)
     coeff_indices = range(k)
@@ -623,7 +624,7 @@ def solve(norm_constraint,
     # setting a low timeout works, because it resets the solver and lets it explore novel search paths
 
     epsilon = 0.05
-    threshold = 0.95 # switch to 0.95 for benchmarks
+    # threshold used to be hardcoded here, now passed as arg
 
     sol.push()
 
@@ -670,7 +671,7 @@ def solve(norm_constraint,
     print()
     return found_floats
 
-def process_all(params, preconditions, loops, degree, assume_int = True, include_param_combos = False):
+def process_all(params, preconditions, loops, degree, assume_int = True, include_param_combos = False, threshold=0.95):
     start_time = time.time()
     loop_count = 1
     for loop in loops:
@@ -695,7 +696,7 @@ def process_all(params, preconditions, loops, degree, assume_int = True, include
                                              degree,
                                              assume_int,
                                              include_param_combos)
-            found_floats = solve(*path_setup)
+            found_floats = solve(*path_setup, threshold=threshold)
 
             analyze_invariants(found_floats, preconditions, loop_conditions, loop_path,
                                vars_sym, vars_init, vars_trans, params, degree, assume_int,
@@ -717,6 +718,7 @@ def main():
     parser.add_argument("-m", "--method", type=int, default=0, help="Method to analyze (default: 0th)")
     parser.add_argument("--assume_real", action="store_true", help="Assume real variables instead of integers")
     parser.add_argument("-c", "--combos", action="store_true", help="Include parameters combinations in basis generation (e.g. x*n)")  
+    parser.add_argument("-t", "--threshold", type=float, default=0.95, help="Blocking threshold (default: 0.95)")
 
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -731,19 +733,16 @@ def main():
     try:
         params, preconditions, loops = load_data(args.file, method_id=args.method)
         
-        # [MODIFIED] Passing all arguments correctly
-        # Note: assume_int should be False if --assume_real is passed
         process_all(
             params, 
             preconditions, 
             loops, 
             degree=args.degree, 
             assume_int=(not args.assume_real), 
-            include_param_combos=args.combos
+            include_param_combos=args.combos,
+            threshold=args.threshold
         )
     except Exception as e:
-        # print(f"Error: {e}")
-        # Using raise instead of print(e) helps debug the traceback if it crashes
         raise e 
 
 if __name__ == "__main__":
