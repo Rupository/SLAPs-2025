@@ -224,7 +224,7 @@ def constraints_and_setup(
     c = np.array([Real(f'a{i}') for i in coeff_indices])
     λp = np.array([Real(f'λp{i}') for i in range(len(preconditions)+1)])
 
-    norm_constraints = [c.T @ c == 1, c.T @ c >= 0.99]
+    norm_constraints = [c.T @ c == 1]
 
     precondition_constraint = get_precondition_constraints(equalities, c, λp)
 

@@ -13,8 +13,9 @@ method IntegerDivision(dividend: int, divisor: int) returns (quotient: int, rema
     quotient := 0;
     remainder := dividend;
     
-    while remainder >= divisor invariant true ==> -2*dividend - 6*divisor - quotient + 4 <= 0 && -2*dividend + 2*divisor*quotient - divisor + 2*remainder <= 0 && dividend - 2*divisor*quotient - 2*divisor - 2*remainder + 1 <= 0 && dividend - divisor*quotient - remainder == 0 && 64*dividend - 64*divisor*quotient - quotient - 64*remainder <= 0 && -64*remainder - 1 <= 0
-        //invariant dividend == divisor * quotient + remainder
+    while remainder >= divisor invariant true ==> -remainder <= 0 && -divisor - quotient + 1 <= 0 && dividend - divisor*quotient - remainder == 0 && -dividend + divisor*quotient - quotient + remainder <= 0 && -8*divisor*quotient - 127*divisor - quotient - 8*remainder + 11 <= 0 && dividend - divisor*quotient - divisor - remainder <= 0
+    
+       //invariant dividend == divisor * quotient + remainder
         // we must generalise this postcondition (CSUR14.pdf) to arrive at a statement
         // which remains true at initialization, throughout ({I} S {B} => {I}) the loop body
         // and on termination (I AND NOT B => Q).

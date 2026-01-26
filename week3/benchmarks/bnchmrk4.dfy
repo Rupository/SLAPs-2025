@@ -8,7 +8,7 @@ method Nonagonal(n: int) returns (j: int)
     var i := 0;
     j := 0;
 
-    while (i < n) invariant true ==> i - n <= 0 && 7*i*i - 5*i - 2*j == 0 && -7*i*i - 11*i + 2*j <= 0 && -7*i*i + 2*j - 49*n + 26 <= 0
+    while (i < n) invariant true ==> -7*i*i + 2*j - 49*n + 26 <= 0 && -7*i*i - 11*i + 2*j <= 0 && 7*i*i - 5*i - 2*j == 0 && i - n <= 0
         //invariant i - n <= 0 
         //invariant j == i*(7*i - 5)/2
     {
