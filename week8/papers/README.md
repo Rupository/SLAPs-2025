@@ -55,3 +55,44 @@
 
     > Our constraint-based technique for verification can be used for solving in-stances of the synthesis problem as well. The technique uniformly treats the en-tities of the verification condition, which includes both the inductive invariants and the description of the system. It does not matter whether the invariants are unknown or parts of the system are unknown or both of them are unknown. As long as there is sufficient information in the system description, the constraint-based approach can potentially find a solution for the unknown quantities.
 
+#### CAV10.pdf
+1. Problem Statement: What problem does the paper solve?
+    - Provided a deep dive analysis into how constraint solving is used for program verification
+    - Deep discussion on the mathematics of various methods
+
+2. Approach: What is the technical approach?
+    - NA
+
+3. Contributions: What are the key contributions?
+    - Important analysis of:  
+        - Termination via linear ranking functions (Farkas)
+        - Interpolant computation ie figuring out which direction the program will go (Farkas)
+        - Linear Invariants (Farkas)
+        - Proof of Termnation (Recurrence Sets)
+    - Extending the above to UIF!
+    
+4. Limitations: What are the limitations?
+    - NA
+
+5. Relevance: How does it relate to your work?
+    - Gives a more concrete mathematical description of the invariant synthesis task, which was super needed as you can see from my notation for week 4. Below is the best description of Farkas' lemma in my opinion among all the papers
+
+    > Now we are ready to eliminate the universal quantification. For this purpose we apply Farkas’ lemma, which formally states $$((\exists x : Ax \leq b) \wedge (\forall x : Ax \leq b \to cx \leq \gamma)) \leftrightarrow (\exists \lambda : \lambda \geq 0 \wedge \lambda A = c \wedge \lambda b \leq \gamma)$$
+
+#### CSUR14.pdf
+1. Problem Statement: What problem does the paper solve?
+    - Gives a proper taxonomy for invariants as whole after careful, detailed analysis of many problems. Kind of like a "handbook for invariants".
+
+2. Approach: What is the technical approach?
+    - NA
+
+3. Contributions: What are the key contributions?
+    - A universal way for expressing and discussing invariants
+    
+4. Limitations: What are the limitations?
+    - NA
+
+5. Relevance: How does it relate to your work?
+    - Related more with the work from the first few weeks as we strengthened our understanding of invariants.
+    - Has a section on automated invariant inference, the authors formulated `gin-pink` to generate candidate invariants with a target postcondition, and verify them using Boogie.
+        - Kind of like my synthesis + validation pipeline
